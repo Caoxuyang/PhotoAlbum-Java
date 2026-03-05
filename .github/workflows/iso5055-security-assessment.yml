@@ -131,14 +131,17 @@ jobs:
 
       - name: Assign to Copilot
         env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           ISSUE_NUMBER="${{ steps.create-issue.outputs.issue_number }}"
 
           # Assign Copilot to the issue using PAT token
-          gh issue edit "$ISSUE_NUMBER" --add-assignee "copilot"
-
-          echo "✅ Assigned Copilot to issue #$ISSUE_NUMBER"
+          if gh issue edit "$ISSUE_NUMBER" --add-assignee "copilot"; then
+            echo "✅ Assigned Copilot to issue #$ISSUE_NUMBER"
+          else
+            echo "⚠️ Could not assign Copilot automatically. Please assign manually."
+            echo "This may require PAT_TOKEN secret with appropriate permissions."
+          fi
 
       - name: Summary
         run: |
