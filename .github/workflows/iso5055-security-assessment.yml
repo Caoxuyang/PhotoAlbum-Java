@@ -49,58 +49,74 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SEVERITY_FILTER: ${{ inputs.severity_filter || 'mandatory' }}
         run: |
-          TITLE="🔒 [ISO5055] Run Security Assessment for this repository"
+          TITLE="🔒 [ISO5055] Run Security Assessment - REPORT ONLY"
+          SEVERITY_UPPER=$(echo "$SEVERITY_FILTER" | tr '[:lower:]' '[:upper:]')
 
-          cat > issue_body.md << 'EOF'
-          ## 🎯 Task for Copilot
+          cat > issue_body.md << EOF
+          ## 🎯 Task for Copilot: Security Assessment REPORT
 
-          Please perform an ISO 5055 security assessment on this repository.
+          ⚠️ **IMPORTANT: This is a REPORT-ONLY task. DO NOT fix any code. DO NOT create a PR.**
 
-          ### Instructions
+          ### Your Task
 
           1. **Run the security assessment tool:**
-             ```
+             \`\`\`
              Call tool: appmod-iso5055-security-assessment
-             ```
-             This tool will analyze the codebase for security vulnerabilities based on ISO 5055 standards.
+             \`\`\`
 
-          2. **Report the findings back to this issue** with:
-             - Summary table (count by severity: mandatory, optional, potential, information)
-             - List of findings filtered by **${SEVERITY_FILTER^^}** severity level
-             - For each finding include:
-               - CWE ID and name
-               - Category
-               - Severity
-               - Description
-               - Evidence (file path and line number)
+          2. **Post a comment on THIS ISSUE** with the assessment report.
 
-          3. **Format the report** like this:
+          3. **DO NOT:**
+             - ❌ Do NOT modify any code
+             - ❌ Do NOT create a Pull Request
+             - ❌ Do NOT fix any vulnerabilities
+             - ❌ Do NOT close this issue
 
-          ### 📊 Summary
-
-          | Severity | Count |
-          |----------|-------|
-          | 🔴 Mandatory | X |
-          | 🟠 Optional | X |
-          | 🟡 Potential | X |
-          | 🔵 Information | X |
-
-          ### 🔴 Mandatory Findings
-
-          #### CWE-XXX: Finding Name
-          - **Category:** ...
-          - **Evidence:** `file/path.java:line` - description
+          4. **DO:**
+             - ✅ Run the assessment tool
+             - ✅ Post the findings as a comment on this issue
+             - ✅ Format the report as shown below
 
           ---
 
-          **Severity Filter:** Only report findings at **${SEVERITY_FILTER^^}** level or higher.
+          ### Required Report Format
 
+          Post a comment with this exact structure:
+
+          \`\`\`markdown
+          ## 📊 ISO 5055 Security Assessment Report
+
+          **Assessment Date:** [date]
           **Repository:** ${{ github.repository }}
-          **Triggered:** ${{ github.event_name }} on $(date -u +"%Y-%m-%d %H:%M UTC")
-          EOF
+          **Severity Filter:** ${SEVERITY_UPPER}
 
-          # Replace env var in the file
-          sed -i "s/\${SEVERITY_FILTER^^}/${SEVERITY_FILTER^^}/g" issue_body.md
+          ### Summary
+
+          | Severity | Count |
+          |----------|-------|
+          | 🔴 Mandatory | [count] |
+          | 🟠 Optional | [count] |
+          | 🟡 Potential | [count] |
+          | 🔵 Information | [count] |
+          | **Total** | [total] |
+
+          ---
+
+          ### 🔴 Findings (${SEVERITY_UPPER} and above)
+
+          #### [SEVERITY] CWE-XXX: Finding Name
+
+          - **Category:** [category]
+          - **Description:** [description]
+          - **Evidence:** \\\`file/path:line\\\` — [details]
+
+          [Repeat for each finding...]
+          \`\`\`
+
+          ---
+
+          **Reminder:** Your ONLY task is to run the assessment and post the report. Do not fix anything.
+          EOF
 
           ISSUE_URL=$(gh issue create \
             --title "$TITLE" \
