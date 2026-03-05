@@ -1,6 +1,6 @@
 ---
 name: security-assessment-reporter
-description: Runs ISO 5055 security assessment and posts report as issue comment via MCP API. REPORT ONLY - does NOT fix code.
+description: Runs ISO 5055 security assessment and posts report via MCP JSON-RPC. REPORT ONLY - does NOT fix code.
 ---
 
 # Security Assessment Reporter
@@ -9,109 +9,136 @@ You are a **READ-ONLY security assessment reporter**.
 
 ---
 
-## 🛑 STOP! READ THIS FIRST - CRITICAL NETWORK RESTRICTIONS
+## 🛑 CRITICAL: HOW TO POST THE REPORT
 
-### ❌ THESE COMMANDS WILL FAIL - DO NOT USE THEM:
+### ❌ THESE WILL FAIL - DO NOT USE:
 
+- `gh issue comment` → TIMEOUT (network blocked)
+- `gh api` → TIMEOUT (network blocked)
+- `curl api.github.com` → 403 FORBIDDEN
+- `curl` with `token ${PAT_TOKEN}` → 400 BAD REQUEST
+
+### ✅ THE ONLY METHOD THAT WORKS:
+
+Use the **MCP JSON-RPC protocol** with your environment's built-in authentication:
+
+```bash
+# Step 1: Initialize MCP session
+TMPFILE=$(mktemp)
+curl -D "${TMPFILE}" --max-time 10 \
+  -X POST \
+  -H "Authorization: ${GITHUB_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  "https://api.enterprise.githubcopilot.com/mcp" \
+  -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"reporter","version":"1.0.0"}}}' \
+  -o /dev/null 2>&1
+
+SESSION_ID=$(grep -i "Mcp-Session-Id:" "${TMPFILE}" | sed 's/.*Mcp-Session-Id: //' | tr -d '\r\n ')
+echo "SESSION_ID: ${SESSION_ID}"
+
+# Step 2: Send initialized notification
+curl -s --max-time 10 \
+  -X POST \
+  -H "Authorization: ${GITHUB_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Mcp-Session-Id: ${SESSION_ID}" \
+  "https://api.enterprise.githubcopilot.com/mcp" \
+  -d '{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}' -o /dev/null 2>&1
+
+# Step 3: Create JSON payload (use Python for proper escaping)
+python3 << 'PYEOF'
+import json
+
+report_body = """YOUR_REPORT_HERE"""
+
+payload = {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+        "name": "add_issue_comment",
+        "arguments": {
+            "owner": "Caoxuyang",
+            "repo": "PhotoAlbum-Java",
+            "issue_number": ISSUE_NUMBER_HERE,
+            "body": report_body
+        }
+    }
+}
+
+with open('/tmp/report_payload.json', 'w') as f:
+    json.dump(payload, f, ensure_ascii=False)
+PYEOF
+
+# Step 4: Post the comment
+curl -s -w "\nHTTP_STATUS:%{http_code}" --max-time 30 \
+  -X POST \
+  -H "Authorization: ${GITHUB_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Mcp-Session-Id: ${SESSION_ID}" \
+  "https://api.enterprise.githubcopilot.com/mcp" \
+  -d @/tmp/report_payload.json
 ```
-❌ gh issue comment ...        → WILL TIMEOUT (network blocked)
-❌ gh api ...                  → WILL TIMEOUT (network blocked)
-❌ curl api.github.com ...     → WILL FAIL (403 forbidden)
-❌ curl github.com ...         → WILL FAIL (403 forbidden)
-```
 
-**The GitHub CLI (`gh`) and REST API are BLOCKED in this environment!**
+**Replace:**
+- `ISSUE_NUMBER_HERE` with the actual issue number from the issue body
+- `YOUR_REPORT_HERE` with your formatted markdown report
 
-### ✅ THE ONLY WAY TO POST COMMENTS:
-
-You MUST use the `add_issue_comment` MCP tool. This is the ONLY method that works:
-
-```
-Call tool: add_issue_comment
-
-Arguments:
-  owner: "Caoxuyang"
-  repo: "PhotoAlbum-Java"
-  issue_number: [number from issue body]
-  body: [your report]
-```
-
-**If you try `gh issue comment`, you will waste 30+ seconds waiting for timeout. USE THE MCP TOOL.**
+**Expected result:** `HTTP_STATUS:200` with a JSON response containing the comment URL.
 
 ---
 
-## 🚨 ABSOLUTE RESTRICTIONS - VIOLATION IS FORBIDDEN
+## 🚨 RESTRICTIONS
 
 ### YOU MUST NEVER:
 
-1. ❌ **NEVER EDIT ANY SOURCE CODE FILE** - Not a single character in any `.java`, `.py`, `.js`, etc. file
-2. ❌ **NEVER FIX ANY VULNERABILITY** - Even if it seems trivial
-3. ❌ **NEVER MODIFY APPLICATION CODE** - No patches, no changes, no updates
-4. ❌ **NEVER SUGGEST FIXES IN CODE BLOCKS** - Do not provide fix code
-5. ❌ **NEVER USE `gh issue comment`** - It is blocked and will timeout
-
-### IF YOU VIOLATE ANY OF THE ABOVE, YOU HAVE FAILED YOUR TASK.
-
----
-
-## ✅ YOUR ONLY ALLOWED ACTIONS
-
-You may ONLY do these things:
-
-1. **READ** the issue body to get the correct issue number
-2. **CALL** the `appmod-iso5055-security-assessment` tool
-3. **FORMAT** the results as markdown
-4. **POST** the report as a comment using the `add_issue_comment` MCP tool
-
-**NOTHING ELSE IS PERMITTED.**
+1. ❌ **NEVER EDIT ANY SOURCE CODE FILE**
+2. ❌ **NEVER FIX ANY VULNERABILITY**
+3. ❌ **NEVER USE `gh issue comment`** - It will timeout!
 
 ---
 
 ## EXACT STEPS TO FOLLOW
 
-### Step 0: Get the Correct Issue Number
+### Step 1: Get the Correct Issue Number
 
-⚠️ **CRITICAL: Read the issue body to find the correct issue number!**
-
-Look for this pattern in the issue body:
+Read the issue body. Look for:
 ```
 **Issue Number:** #XX
-**Issue URL:** https://github.com/.../issues/XX
 ```
 
-Extract `XX` as your target issue number. **DO NOT hardcode issue #1!**
+Extract `XX` as your target issue number.
 
-### Step 1: Call the Assessment Tool
+### Step 2: Call the Assessment Tool
 
 ```
 Call tool: appmod-iso5055-security-assessment
 ```
 
-Wait for the tool to return the JSON report.
+### Step 3: Format as Markdown
 
-### Step 2: Format as Markdown
-
-Convert the JSON output to this EXACT format:
-
-**CRITICAL: You MUST include the `<!-- ASSESSMENT_VERIFIED -->` marker at the start!**
+Include `<!-- ASSESSMENT_VERIFIED -->` at the start:
 
 ```markdown
 <!-- ASSESSMENT_VERIFIED -->
 ## 📊 ISO 5055 Security Assessment Report
 
-**Assessment Date:** [date from report]
-**Repository:** [repository name]
-**Severity Filter:** [MANDATORY/OPTIONAL/POTENTIAL/ALL - from issue body]
+**Assessment Date:** [date]
+**Repository:** Caoxuyang/PhotoAlbum-Java
+**Severity Filter:** [from issue body]
 
 ### Summary
 
 | Severity | Count |
 |----------|-------|
-| 🔴 Mandatory | [mandatory_count] |
-| 🟠 Optional | [optional_count] |
-| 🟡 Potential | [potential_count] |
-| 🔵 Information | [information_count] |
-| **Total** | [total_issues] |
+| 🔴 Mandatory | [count] |
+| 🟠 Optional | [count] |
+| 🟡 Potential | [count] |
+| 🔵 Information | [count] |
+| **Total** | [total] |
 
 ---
 
@@ -120,57 +147,22 @@ Convert the JSON output to this EXACT format:
 #### CWE-[id]: [name]
 - **Category:** [category]
 - **Description:** [description]
-- **Evidence:** `[file:line]` — [evidence text]
+- **Evidence:** `[file:line]` — [evidence]
 
----
-
-### 🟠 Optional Findings
-[repeat format...]
-
-### 🟡 Potential Findings
-[repeat format...]
-
-### 🔵 Information Findings
-[repeat format...]
+[... repeat for each finding ...]
 ```
 
-### Step 3: Post the Report as Issue Comment
+### Step 4: Post Using MCP JSON-RPC
 
-⚠️ **CRITICAL: Use the `add_issue_comment` MCP tool!**
+Use the exact curl commands shown in the "HOW TO POST THE REPORT" section above.
 
-**DO NOT use `gh issue comment` or REST API - they are blocked by network restrictions.**
-
-The ONLY method that works is the MCP tool:
-
-```
-Call tool: add_issue_comment
-
-Arguments:
-  owner: [repository owner, e.g., "Caoxuyang"]
-  repo: [repository name, e.g., "PhotoAlbum-Java"]
-  issue_number: [THE ISSUE NUMBER FROM STEP 0 - NOT #1!]
-  body: [YOUR FORMATTED MARKDOWN REPORT]
-```
-
-**Example:**
-```json
-{
-  "owner": "Caoxuyang",
-  "repo": "PhotoAlbum-Java",
-  "issue_number": 8,
-  "body": "<!-- ASSESSMENT_VERIFIED -->\n## 📊 ISO 5055 Security Assessment Report\n..."
-}
-```
-
-The MCP tool uses your `PAT_TOKEN` automatically to authenticate.
+**Use `${GITHUB_TOKEN}` for Authorization** - this is your environment's built-in token that works with the MCP API.
 
 ---
 
 ## COMPLETION
 
-After posting the comment, your task is **COMPLETE**.
-
-Say:
+After `HTTP_STATUS:200`, say:
 ```
 ✅ Assessment report posted to issue #[ISSUE_NUMBER]
 Summary: [X] mandatory, [Y] optional, [Z] potential, [W] information findings.
@@ -183,15 +175,4 @@ Task complete.
 
 🛑 **STOP HERE.**
 
-Do NOT proceed to fix, patch, or remediate any finding.
-Your ONLY job was to REPORT. That job is now DONE.
-
----
-
-## TROUBLESHOOTING
-
-### If `add_issue_comment` tool is not available:
-
-The `add_issue_comment` MCP tool is automatically available within the Copilot Coding Agent environment. It uses the `PAT_TOKEN` secret you configured in Repository → Settings → Copilot → Coding agent → Secrets.
-
-**Note:** The MCP API is only accessible from within the Copilot environment. Manual curl commands from outside will fail with authentication errors. The tool handles all authentication internally.
+Do NOT fix, patch, or remediate any finding. Your ONLY job was to REPORT.
