@@ -160,47 +160,6 @@ Your ONLY job was to REPORT. That job is now DONE.
 
 ### If `add_issue_comment` tool is not available:
 
-The MCP tool should be automatically available. If not, the fallback is to use curl with JSON-RPC:
+The `add_issue_comment` MCP tool is automatically available within the Copilot Coding Agent environment. It uses the `PAT_TOKEN` secret you configured in Repository → Settings → Copilot → Coding agent → Secrets.
 
-```bash
-# Initialize MCP session
-TMPFILE=$(mktemp)
-curl -D "${TMPFILE}" --max-time 10 \
-  -X POST \
-  -H "Authorization: token ${PAT_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  "https://api.enterprise.githubcopilot.com/mcp" \
-  -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"reporter","version":"1.0.0"}}}'
-
-SESSION_ID=$(grep -i "Mcp-Session-Id:" "${TMPFILE}" | sed 's/.*Mcp-Session-Id: //' | tr -d '\r\n ')
-
-# Post comment
-cat > /tmp/comment_payload.json << 'PAYLOAD'
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "add_issue_comment",
-    "arguments": {
-      "owner": "OWNER",
-      "repo": "REPO",
-      "issue_number": ISSUE_NUMBER,
-      "body": "YOUR_REPORT_HERE"
-    }
-  }
-}
-PAYLOAD
-
-curl -s --max-time 30 \
-  -X POST \
-  -H "Authorization: token ${PAT_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -H "Mcp-Session-Id: ${SESSION_ID}" \
-  "https://api.enterprise.githubcopilot.com/mcp" \
-  -d @/tmp/comment_payload.json
-```
-
-Replace OWNER, REPO, ISSUE_NUMBER, and YOUR_REPORT_HERE with actual values.
+**Note:** The MCP API is only accessible from within the Copilot environment. Manual curl commands from outside will fail with authentication errors. The tool handles all authentication internally.
