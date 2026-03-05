@@ -53,69 +53,22 @@ jobs:
           SEVERITY_UPPER=$(echo "$SEVERITY_FILTER" | tr '[:lower:]' '[:upper:]')
 
           cat > issue_body.md << EOF
-          ## 🎯 Task for Copilot: Security Assessment REPORT
+          ## Task: Run ISO 5055 Security Assessment
 
-          ⚠️ **IMPORTANT: This is a REPORT-ONLY task. DO NOT fix any code. DO NOT create a PR.**
-
-          ### Your Task
-
-          1. **Run the security assessment tool:**
-             \`\`\`
-             Call tool: appmod-iso5055-security-assessment
-             \`\`\`
-
-          2. **Post a comment on THIS ISSUE** with the assessment report.
-
-          3. **DO NOT:**
-             - ❌ Do NOT modify any code
-             - ❌ Do NOT create a Pull Request
-             - ❌ Do NOT fix any vulnerabilities
-             - ❌ Do NOT close this issue
-
-          4. **DO:**
-             - ✅ Run the assessment tool
-             - ✅ Post the findings as a comment on this issue
-             - ✅ Format the report as shown below
-
-          ---
-
-          ### Required Report Format
-
-          Post a comment with this exact structure:
-
-          \`\`\`markdown
-          ## 📊 ISO 5055 Security Assessment Report
-
-          **Assessment Date:** [date]
-          **Repository:** ${{ github.repository }}
+          **Agent:** \`iso5055-security-reporter\`
           **Severity Filter:** ${SEVERITY_UPPER}
-
-          ### Summary
-
-          | Severity | Count |
-          |----------|-------|
-          | 🔴 Mandatory | [count] |
-          | 🟠 Optional | [count] |
-          | 🟡 Potential | [count] |
-          | 🔵 Information | [count] |
-          | **Total** | [total] |
+          **Issue Number:** (this issue)
 
           ---
 
-          ### 🔴 Findings (${SEVERITY_UPPER} and above)
+          Follow the instructions in \`.github/agents/iso5055-security-reporter.md\`
 
-          #### [SEVERITY] CWE-XXX: Finding Name
+          **Quick Summary:**
+          1. Call tool \`appmod-iso5055-security-assessment\`
+          2. Format the results as markdown
+          3. Post the report as a comment on THIS issue using \`gh issue comment\`
 
-          - **Category:** [category]
-          - **Description:** [description]
-          - **Evidence:** \\\`file/path:line\\\` — [details]
-
-          [Repeat for each finding...]
-          \`\`\`
-
-          ---
-
-          **Reminder:** Your ONLY task is to run the assessment and post the report. Do not fix anything.
+          ⛔ **DO NOT** fix code, create PRs, or close this issue.
           EOF
 
           ISSUE_URL=$(gh issue create \
