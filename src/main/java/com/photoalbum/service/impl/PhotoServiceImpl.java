@@ -79,12 +79,13 @@ public class PhotoServiceImpl implements PhotoService {
         result.setFileName(file.getOriginalFilename());
 
         try {
-            // Validate file type
-            if (!allowedMimeTypes.contains(file.getContentType().toLowerCase())) {
+            // Validate file type - guard against null Content-Type (CWE-665)
+            String contentType = file.getContentType();
+            if (contentType == null || !allowedMimeTypes.contains(contentType.toLowerCase())) {
                 result.setSuccess(false);
                 result.setErrorMessage("File type not supported. Please upload JPEG, PNG, GIF, or WebP images.");
                 logger.warn("Upload rejected: Invalid file type {} for {}", 
-                    file.getContentType(), file.getOriginalFilename());
+                    contentType, file.getOriginalFilename());
                 return result;
             }
 
@@ -118,22 +119,31 @@ public class PhotoServiceImpl implements PhotoService {
                 // Read file content for database storage
                 photoData = file.getBytes();
                 
-                // Extract image dimensions from byte array
+                // Verify actual image content to prevent disguised file uploads (CWE-434).
+                // ImageIO.read() inspects magic bytes and rejects non-image data even when
+                // the client-supplied Content-Type claims it is a valid image format.
                 try (ByteArrayInputStream bis = new ByteArrayInputStream(photoData)) {
                     BufferedImage image = ImageIO.read(bis);
-                    if (image != null) {
-                        width = image.getWidth();
-                        height = image.getHeight();
+                    if (image == null) {
+                        result.setSuccess(false);
+                        result.setErrorMessage("File content is not a valid image. Please upload a valid JPEG, PNG, GIF, or WebP file.");
+                        logger.warn("Upload rejected: File content is not a valid image for {}", file.getOriginalFilename());
+                        return result;
                     }
+                    width = image.getWidth();
+                    height = image.getHeight();
                 }
             } catch (IOException ex) {
                 logger.error("Error reading file data for {}", file.getOriginalFilename(), ex);
                 result.setSuccess(false);
                 result.setErrorMessage("Error reading file data. Please try again.");
                 return result;
-            } catch (Exception ex) {
-                logger.warn("Could not extract image dimensions for {}", file.getOriginalFilename(), ex);
-                // Continue without dimensions - not critical
+            }
+
+            if (photoData == null || photoData.length == 0) {
+                result.setSuccess(false);
+                result.setErrorMessage("File is empty or could not be read.");
+                return result;
             }
 
             // Create photo entity with database BLOB storage
@@ -143,7 +153,7 @@ public class PhotoServiceImpl implements PhotoService {
                 storedFileName,
                 relativePath, // Keep for compatibility, not used for serving
                 file.getSize(),
-                file.getContentType()
+                contentType
             );
             photo.setWidth(width);
             photo.setHeight(height);

@@ -78,12 +78,22 @@ public class PhotoFileController {
                     .header(HttpHeaders.PRAGMA, "no-cache")
                     .header(HttpHeaders.EXPIRES, "0")
                     .header("X-Photo-ID", String.valueOf(id))
-                    .header("X-Photo-Name", photo.getOriginalFileName())
+                    .header("X-Photo-Name", sanitizeHeaderValue(photo.getOriginalFileName()))
                     .header("X-Photo-Size", String.valueOf(photoData.length))
                     .body(resource);
         } catch (Exception ex) {
             logger.error("Error serving photo with ID {} from Oracle database", id, ex);
             return ResponseEntity.status(500).build();
         }
+    }
+
+    /**
+     * Strips CR and LF characters from a header value to prevent HTTP response splitting (CWE-88).
+     */
+    private String sanitizeHeaderValue(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replaceAll("[\r\n]", "");
     }
 }

@@ -34,10 +34,13 @@ public interface PhotoRepository extends JpaRepository<Photo, String> {
     @Query(value = "SELECT * FROM (" +
                    "SELECT ID, ORIGINAL_FILE_NAME, PHOTO_DATA, STORED_FILE_NAME, FILE_PATH, FILE_SIZE, " +
                    "MIME_TYPE, UPLOADED_AT, WIDTH, HEIGHT, ROWNUM as RN " +
+                   "FROM (" +
+                   "SELECT ID, ORIGINAL_FILE_NAME, PHOTO_DATA, STORED_FILE_NAME, FILE_PATH, FILE_SIZE, " +
+                   "MIME_TYPE, UPLOADED_AT, WIDTH, HEIGHT " +
                    "FROM PHOTOS " +
                    "WHERE UPLOADED_AT < :uploadedAt " +
                    "ORDER BY UPLOADED_AT DESC" +
-                   ") WHERE ROWNUM <= 10", 
+                   ")) WHERE RN <= 10", 
            nativeQuery = true)
     List<Photo> findPhotosUploadedBefore(@Param("uploadedAt") LocalDateTime uploadedAt);
 
