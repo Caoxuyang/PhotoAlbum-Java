@@ -90,13 +90,24 @@ Convert the JSON output to this EXACT format:
 
 ### Step 3: Post Comment to Issue
 
-Execute this command to post your report:
+⚠️ **CRITICAL: Post to the CORRECT issue!**
+
+The issue number is provided in the issue body that assigned you this task. Look for:
+- `**Issue Number:** #XX`
+- `**Issue URL:** https://github.com/.../issues/XX`
+
+**Use this exact command:**
 
 ```bash
-gh issue comment [ISSUE_NUMBER] --body "[YOUR_FORMATTED_MARKDOWN_REPORT]"
+gh issue comment <ISSUE_NUMBER> --repo <OWNER>/<REPO> --body "<YOUR_REPORT>"
 ```
 
-Get the issue number from the issue that triggered this task.
+**Example:**
+```bash
+gh issue comment 8 --repo Caoxuyang/PhotoAlbum-Java --body "## 📊 ISO 5055 Security Assessment Report..."
+```
+
+⛔ **DO NOT post to issue #1 or any other issue.** Only post to the issue number specified in your assignment.
 
 ---
 

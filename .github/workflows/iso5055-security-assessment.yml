@@ -52,33 +52,43 @@ jobs:
           TITLE="🔒 [ISO5055] Run Security Assessment - REPORT ONLY"
           SEVERITY_UPPER=$(echo "$SEVERITY_FILTER" | tr '[:lower:]' '[:upper:]')
 
-          cat > issue_body.md << EOF
-          ## Task: Run ISO 5055 Security Assessment
-
-          **Agent:** \`security-assessment-reporter\`
-          **Severity Filter:** ${SEVERITY_UPPER}
-          **Issue Number:** (this issue)
-
-          ---
-
-          Follow the instructions in \`.github/agents/security-assessment-reporter.md\`
-
-          **Quick Summary:**
-          1. Call tool \`appmod-iso5055-security-assessment\`
-          2. Format the results as markdown
-          3. Post the report as a comment on THIS issue using \`gh issue comment\`
-
-          ⛔ **DO NOT** fix code, create PRs, or close this issue.
-          EOF
-
+          # First create issue with placeholder, then update with actual number
           ISSUE_URL=$(gh issue create \
             --title "$TITLE" \
-            --body-file issue_body.md \
+            --body "Initializing..." \
             --label "security,iso5055,automated,copilot")
 
           ISSUE_NUMBER=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
           echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
           echo "issue_url=$ISSUE_URL" >> $GITHUB_OUTPUT
+
+          # Now update issue body with correct issue number
+          gh issue edit $ISSUE_NUMBER --body "## Task: Run ISO 5055 Security Assessment
+
+          **Agent:** \`security-assessment-reporter\`
+          **Severity Filter:** ${SEVERITY_UPPER}
+
+          ---
+
+          ## 🎯 TARGET ISSUE FOR REPORT
+
+          **Issue Number:** #${ISSUE_NUMBER}
+          **Issue URL:** ${ISSUE_URL}
+
+          ⚠️ **IMPORTANT:** Post your report as a comment on issue **#${ISSUE_NUMBER}** (this issue).
+
+          ---
+
+          ## Instructions
+
+          Follow the instructions in \`.github/agents/security-assessment-reporter.md\`
+
+          **Steps:**
+          1. Call tool \`appmod-iso5055-security-assessment\`
+          2. Format the results as markdown
+          3. Post the report using: \`gh issue comment ${ISSUE_NUMBER} --body \"<YOUR_REPORT>\"\`
+
+          ⛔ **DO NOT** fix code, create PRs, or close this issue."
 
           echo "✅ Created issue #$ISSUE_NUMBER: $ISSUE_URL"
 
