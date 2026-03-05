@@ -1,52 +1,60 @@
 {
-  "assessment_date": "2026-03-05T09:30:00.000Z",
+  "assessment_date": "2026-03-05T13:41:13.608Z",
   "summary": {
-    "total_issues": 5,
-    "mandatory_count": 2,
-    "optional_count": 1,
-    "potential_count": 1,
-    "information_count": 1
+    "total_issues": 6,
+    "mandatory_count": 1,
+    "optional_count": 2,
+    "potential_count": 3,
+    "information_count": 0
   },
   "findings": [
     {
-      "id": "CWE-89",
-      "name": "SQL Injection",
-      "category": "Injection Attacks",
-      "severity": "mandatory",
-      "description": "The product constructs all or part of an SQL command using externally-influenced input from an upstream component, but it does not neutralize or incorrectly neutralizes special elements that could modify the intended SQL command.",
-      "evidence": "src/main/java/com/example/photoalbum/repository/PhotoRepository.java:45 — String concatenation used to build SQL query with user input: \"SELECT * FROM photos WHERE title LIKE '%\" + searchTerm + \"%'\". This allows SQL injection attacks."
-    },
-    {
-      "id": "CWE-79",
-      "name": "Cross-site Scripting (XSS)",
-      "category": "Injection Attacks",
-      "severity": "mandatory",
-      "description": "The product does not neutralize or incorrectly neutralizes user-controllable input before it is placed in output that is used as a web page served to other users.",
-      "evidence": "src/main/java/com/example/photoalbum/controller/PhotoController.java:78 — User-provided photo description is rendered directly in HTML without escaping: model.addAttribute(\"description\", photo.getDescription()). Template does not use th:text for safe rendering."
-    },
-    {
-      "id": "CWE-22",
-      "name": "Path Traversal",
-      "category": "File & Path Security",
+      "id": "CWE-259",
+      "name": "Use of Hard-coded Password",
+      "category": "Credentials & Secrets",
       "severity": "optional",
-      "description": "The product uses external input to construct a pathname that is intended to identify a file or directory located underneath a restricted parent directory, but does not properly neutralize special elements that can cause the pathname to resolve outside of the restricted directory.",
-      "evidence": "src/main/java/com/example/photoalbum/service/FileStorageService.java:32 — User-supplied filename used directly in path construction: Paths.get(uploadDir, filename). No validation for '../' sequences."
+      "description": "The product contains a hard-coded password, which it uses for its own inbound authentication or for outbound communication to external components.",
+      "evidence": "src/main/resources/application.properties:12 — spring.datasource.password=photoalbum"
     },
     {
-      "id": "CWE-532",
-      "name": "Insertion of Sensitive Information into Log File",
-      "category": "Information Exposure",
-      "severity": "potential",
-      "description": "Information written to log files can be of a sensitive nature and give valuable guidance to an attacker or expose sensitive user information.",
-      "evidence": "src/main/java/com/example/photoalbum/service/AuthService.java:56 — User credentials logged at DEBUG level: logger.debug(\"Login attempt for user: {} with password: {}\", username, password). Sensitive data exposed in logs."
+      "id": "CWE-434",
+      "name": "Unrestricted Upload of File with Dangerous Type",
+      "category": "File & Path Security",
+      "severity": "mandatory",
+      "description": "The product allows the upload or transfer of dangerous file types that are automatically processed within its environment.",
+      "evidence": "PhotoServiceImpl.java:83 — File upload with MIME type validation but only checks allowed types from config, not file extension validation or true file type verification"
     },
     {
-      "id": "CWE-477",
-      "name": "Use of Obsolete Function",
+      "id": "CWE-456",
+      "name": "Missing Initialization of a Variable",
       "category": "Code Quality",
-      "severity": "information",
-      "description": "The code uses deprecated or obsolete functions, suggesting the code has not been actively maintained.",
-      "evidence": "pom.xml:25 — Using outdated Spring Boot version 2.5.0 which has known security vulnerabilities. Recommend upgrading to latest 3.x version."
+      "severity": "potential",
+      "description": "The product does not initialize critical variables, which causes the execution environment to use unexpected values.",
+      "evidence": "PhotoServiceImpl.java:113-115 — Integer width/height and byte[] photoData initialized to null, then used at line 142 without null check"
+    },
+    {
+      "id": "CWE-457",
+      "name": "Use of Uninitialized Variable",
+      "category": "Code Quality",
+      "severity": "potential",
+      "description": "The code uses a variable that has not been initialized, leading to unpredictable or unintended results.",
+      "evidence": "PhotoServiceImpl.java:142 — photoData can be uninitialized (remains null) if exception occurs in lines 129-137, then passed to Photo constructor"
+    },
+    {
+      "id": "CWE-665",
+      "name": "Improper Initialization",
+      "category": "Code Quality",
+      "severity": "potential",
+      "description": "The product does not initialize or incorrectly initializes a resource, which might leave the resource in an unexpected state when it is accessed or used.",
+      "evidence": "PhotoServiceImpl.java:113-115 — width and height Integer objects initialized to null and may remain null, then set on Photo entity at lines 148-149 without validation"
+    },
+    {
+      "id": "CWE-798",
+      "name": "Use of Hard-coded Credentials",
+      "category": "Credentials & Secrets",
+      "severity": "optional",
+      "description": "The product contains hard-coded credentials, such as a password or cryptographic key.",
+      "evidence": "src/main/resources/application.properties:12 — spring.datasource.password=photoalbum"
     }
   ]
 }

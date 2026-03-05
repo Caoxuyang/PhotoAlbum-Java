@@ -1,0 +1,415 @@
+[
+  {
+    "id": "CWE-22",
+    "name": "Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')",
+    "status": "NOT_FOUND",
+    "category": "File & Path Security",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-23",
+    "name": "Relative Path Traversal",
+    "status": "NOT_FOUND",
+    "category": "File & Path Security",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-36",
+    "name": "Absolute Path Traversal",
+    "status": "NOT_FOUND",
+    "category": "File & Path Security",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-77",
+    "name": "Improper Neutralization of Special Elements used in a Command ('Command Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-78",
+    "name": "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-79",
+    "name": "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-88",
+    "name": "Improper Neutralization of Argument Delimiters in a Command ('Argument Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-89",
+    "name": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-90",
+    "name": "Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-91",
+    "name": "XML Injection (aka Blind XPath Injection)",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-99",
+    "name": "Improper Control of Resource Identifiers ('Resource Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-119",
+    "name": "Improper Restriction of Operations within the Bounds of a Memory Buffer",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-120",
+    "name": "Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-123",
+    "name": "Write-what-where Condition",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-125",
+    "name": "Out-of-bounds Read",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-130",
+    "name": "Improper Handling of Length Parameter Inconsistency",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-259",
+    "name": "Use of Hard-coded Password",
+    "status": "FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": "src/main/resources/application.properties:12 — spring.datasource.password=photoalbum"
+  },
+  {
+    "id": "CWE-321",
+    "name": "Use of Hard-coded Cryptographic Key",
+    "status": "NOT_FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-415",
+    "name": "Double Free",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-416",
+    "name": "Use After Free",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-434",
+    "name": "Unrestricted Upload of File with Dangerous Type",
+    "status": "FOUND",
+    "category": "File & Path Security",
+    "evidence": "PhotoServiceImpl.java:83 — File upload with MIME type validation but only checks allowed types from config, not file extension validation or true file type verification"
+  },
+  {
+    "id": "CWE-456",
+    "name": "Missing Initialization of a Variable",
+    "status": "FOUND",
+    "category": "Code Quality",
+    "evidence": "PhotoServiceImpl.java:113-115 — Integer width/height and byte[] photoData initialized to null, then used at line 142 without null check"
+  },
+  {
+    "id": "CWE-457",
+    "name": "Use of Uninitialized Variable",
+    "status": "FOUND",
+    "category": "Code Quality",
+    "evidence": "PhotoServiceImpl.java:142 — photoData can be uninitialized (remains null) if exception occurs in lines 129-137, then passed to Photo constructor"
+  },
+  {
+    "id": "CWE-477",
+    "name": "Use of Obsolete Function",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-502",
+    "name": "Deserialization of Untrusted Data",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-543",
+    "name": "Use of Singleton Pattern Without Synchronization in a Multithreaded Context",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-564",
+    "name": "SQL Injection: Hibernate",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-567",
+    "name": "Unsynchronized Access to Shared Data in a Multithreaded Context",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-570",
+    "name": "Expression is Always False",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-571",
+    "name": "Expression is Always True",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-606",
+    "name": "Unchecked Input for Loop Condition",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-611",
+    "name": "Improper Restriction of XML External Entity Reference",
+    "status": "NOT_FOUND",
+    "category": "File & Path Security",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-643",
+    "name": "Improper Neutralization of Data within XPath Expressions ('XPath Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-652",
+    "name": "Improper Neutralization of Data within XQuery Expressions ('XQuery Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-662",
+    "name": "Improper Synchronization",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-665",
+    "name": "Improper Initialization",
+    "status": "FOUND",
+    "category": "Code Quality",
+    "evidence": "PhotoServiceImpl.java:113-115 — width and height Integer objects initialized to null and may remain null, then set on Photo entity at lines 148-149 without validation"
+  },
+  {
+    "id": "CWE-667",
+    "name": "Improper Locking",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-672",
+    "name": "Operation on a Resource after Expiration or Release",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-681",
+    "name": "Incorrect Conversion between Numeric Types",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-682",
+    "name": "Incorrect Calculation",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-732",
+    "name": "Incorrect Permission Assignment for Critical Resource",
+    "status": "NOT_FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-772",
+    "name": "Missing Release of Resource after Effective Lifetime",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-775",
+    "name": "Missing Release of File Descriptor or Handle after Effective Lifetime",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-778",
+    "name": "Insufficient Logging",
+    "status": "NOT_FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-783",
+    "name": "Operator Precedence Logic Error",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-786",
+    "name": "Access of Memory Location Before Start of Buffer",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-787",
+    "name": "Out-of-bounds Write",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-788",
+    "name": "Access of Memory Location After End of Buffer",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-789",
+    "name": "Memory Allocation with Excessive Size Value",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-798",
+    "name": "Use of Hard-coded Credentials",
+    "status": "FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": "src/main/resources/application.properties:12 — spring.datasource.password=photoalbum"
+  },
+  {
+    "id": "CWE-805",
+    "name": "Buffer Access with Incorrect Length Value",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-820",
+    "name": "Missing Synchronization",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-821",
+    "name": "Incorrect Synchronization",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-822",
+    "name": "Untrusted Pointer Dereference",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-823",
+    "name": "Use of Out-of-range Pointer Offset",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-824",
+    "name": "Access of Uninitialized Pointer",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-825",
+    "name": "Expired Pointer Dereference",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-835",
+    "name": "Loop with Unreachable Exit Condition ('Infinite Loop')",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-1057",
+    "name": "Data Access Operations Outside of Expected Data Manager Component",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  }
+]
