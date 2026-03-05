@@ -55,13 +55,13 @@ jobs:
           cat > issue_body.md << EOF
           ## Task: Run ISO 5055 Security Assessment
 
-          **Agent:** \`iso5055-security-reporter\`
+          **Agent:** \`security-assessment-reporter\`
           **Severity Filter:** ${SEVERITY_UPPER}
           **Issue Number:** (this issue)
 
           ---
 
-          Follow the instructions in \`.github/agents/iso5055-security-reporter.md\`
+          Follow the instructions in \`.github/agents/security-assessment-reporter.md\`
 
           **Quick Summary:**
           1. Call tool \`appmod-iso5055-security-assessment\`
