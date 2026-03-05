@@ -1,0 +1,415 @@
+[
+  {
+    "id": "CWE-22",
+    "name": "Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')",
+    "status": "NOT_FOUND",
+    "category": "File & Path Security",
+    "evidence": "Photos are stored as BLOBs in Oracle DB and served by database ID. No user-controlled input is resolved to a filesystem path."
+  },
+  {
+    "id": "CWE-23",
+    "name": "Relative Path Traversal",
+    "status": "NOT_FOUND",
+    "category": "File & Path Security",
+    "evidence": "No relative path resolution against user input."
+  },
+  {
+    "id": "CWE-36",
+    "name": "Absolute Path Traversal",
+    "status": "NOT_FOUND",
+    "category": "File & Path Security",
+    "evidence": "No absolute filesystem path is constructed from user input."
+  },
+  {
+    "id": "CWE-77",
+    "name": "Improper Neutralization of Special Elements used in a Command ('Command Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": "No Runtime.exec(), ProcessBuilder, or OS command construction found."
+  },
+  {
+    "id": "CWE-78",
+    "name": "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": "No OS command execution APIs found in the codebase."
+  },
+  {
+    "id": "CWE-79",
+    "name": "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": "Thymeleaf templates exclusively use th:text (HTML-auto-escaped). No th:utext or unescaped raw output expressions detected."
+  },
+  {
+    "id": "CWE-88",
+    "name": "Improper Neutralization of Argument Delimiters in a Command ('Argument Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": "No command argument construction from user input found."
+  },
+  {
+    "id": "CWE-89",
+    "name": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": "All repository queries use Spring Data JPA @Query with @Param named parameters — fully parameterized, no string concatenation."
+  },
+  {
+    "id": "CWE-90",
+    "name": "Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": "No LDAP libraries or patterns present in the codebase."
+  },
+  {
+    "id": "CWE-91",
+    "name": "XML Injection (aka Blind XPath Injection)",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": "No XML parsing or construction from user-controlled input found."
+  },
+  {
+    "id": "CWE-99",
+    "name": "Improper Control of Resource Identifiers ('Resource Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": "MIME types validated against a whitelist; photo IDs are UUIDs used only as JPA primary keys."
+  },
+  {
+    "id": "CWE-119",
+    "name": "Improper Restriction of Operations within the Bounds of a Memory Buffer",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++/Assembly code. Memory buffer operations managed by the JVM."
+  },
+  {
+    "id": "CWE-120",
+    "name": "Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++ code. Java does not support manual buffer copy without bounds checking."
+  },
+  {
+    "id": "CWE-123",
+    "name": "Write-what-where Condition",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++ code. Arbitrary memory writes are not possible in a managed Java runtime."
+  },
+  {
+    "id": "CWE-125",
+    "name": "Out-of-bounds Read",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++ code. Java enforces array bounds at runtime, preventing out-of-bounds reads."
+  },
+  {
+    "id": "CWE-130",
+    "name": "Improper Handling of Length Parameter Inconsistency",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "No length parameter inconsistency patterns found."
+  },
+  {
+    "id": "CWE-259",
+    "name": "Use of Hard-coded Password",
+    "status": "FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": "src/main/resources/application.properties (line 12): spring.datasource.password=photoalbum\nsrc/main/resources/application-docker.properties (line 4): spring.datasource.password=photoalbum"
+  },
+  {
+    "id": "CWE-321",
+    "name": "Use of Hard-coded Cryptographic Key",
+    "status": "NOT_FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": "No cryptographic keys found hard-coded in the codebase."
+  },
+  {
+    "id": "CWE-415",
+    "name": "Double Free",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++ code. Java uses garbage collection; there is no manual free() operation."
+  },
+  {
+    "id": "CWE-416",
+    "name": "Use After Free",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++ code. Java GC prevents use-after-free by managing object lifecycle automatically."
+  },
+  {
+    "id": "CWE-434",
+    "name": "Unrestricted Upload of File with Dangerous Type",
+    "status": "FOUND",
+    "category": "File & Path Security",
+    "evidence": "PhotoServiceImpl.java line 83 — file type validation relies solely on the client-provided Content-Type header (file.getContentType()), which an attacker can set to any allowed value while uploading a file of any dangerous type. No magic-byte / server-side content inspection is performed."
+  },
+  {
+    "id": "CWE-456",
+    "name": "Missing Initialization of a Variable",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "No missing initialization patterns found."
+  },
+  {
+    "id": "CWE-457",
+    "name": "Use of Uninitialized Variable",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "No uninitialized variable usage patterns found."
+  },
+  {
+    "id": "CWE-477",
+    "name": "Use of Obsolete Function",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "No obsolete function usage found."
+  },
+  {
+    "id": "CWE-502",
+    "name": "Deserialization of Untrusted Data",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": "No ObjectInputStream, readObject(), XMLDecoder, or any Java deserialization mechanism found."
+  },
+  {
+    "id": "CWE-543",
+    "name": "Use of Singleton Pattern Without Synchronization in a Multithreaded Context",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": "No singleton pattern exists — the app uses Spring DI (@Service, @Transactional), not manually managed singletons."
+  },
+  {
+    "id": "CWE-564",
+    "name": "SQL Injection: Hibernate",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": "All repository queries use Spring Data JPA @Query with @Param named parameters — fully parameterized."
+  },
+  {
+    "id": "CWE-567",
+    "name": "Unsynchronized Access to Shared Data in a Multithreaded Context",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": "The only static fields are static final Logger instances (immutable). No mutable shared static state exists."
+  },
+  {
+    "id": "CWE-570",
+    "name": "Expression is Always False",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "No always-false expression patterns found."
+  },
+  {
+    "id": "CWE-571",
+    "name": "Expression is Always True",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "No always-true expression patterns found."
+  },
+  {
+    "id": "CWE-606",
+    "name": "Unchecked Input for Loop Condition",
+    "status": "FOUND",
+    "category": "Code Quality",
+    "evidence": "HomeController.java:68 — for (MultipartFile file : files) iterates over a user-supplied list (@RequestParam(\"files\") List<MultipartFile> files) with no upper-bound check on the number of files. Only a null/empty guard exists, so an attacker can submit arbitrarily many files and cause excessive looping / resource exhaustion."
+  },
+  {
+    "id": "CWE-611",
+    "name": "Improper Restriction of XML External Entity Reference",
+    "status": "NOT_FOUND",
+    "category": "File & Path Security",
+    "evidence": "No XML parsing APIs (DocumentBuilder, SAXParser, XMLInputFactory, etc.) present anywhere in the codebase."
+  },
+  {
+    "id": "CWE-643",
+    "name": "Improper Neutralization of Data within XPath Expressions ('XPath Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": "No XPath libraries or patterns present in the codebase."
+  },
+  {
+    "id": "CWE-652",
+    "name": "Improper Neutralization of Data within XQuery Expressions ('XQuery Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": "No XQuery libraries or patterns present in the codebase."
+  },
+  {
+    "id": "CWE-662",
+    "name": "Improper Synchronization",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": "No explicit thread management or concurrent resource sharing. Spring transaction management handles data access safely."
+  },
+  {
+    "id": "CWE-665",
+    "name": "Improper Initialization",
+    "status": "FOUND",
+    "category": "Code Quality",
+    "evidence": "PhotoServiceImpl.java:115 — byte[] photoData = null; is initialized to null. If file.getBytes() throws a non-IOException RuntimeException, it is silently swallowed by catch (Exception ex) with only a warning log, and execution continues with photoData still null."
+  },
+  {
+    "id": "CWE-667",
+    "name": "Improper Locking",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": "No Lock, ReentrantLock, synchronized blocks, or any locking primitives are used."
+  },
+  {
+    "id": "CWE-672",
+    "name": "Operation on a Resource after Expiration or Release",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "Resources such as ByteArrayInputStream are properly managed via try-with-resources."
+  },
+  {
+    "id": "CWE-681",
+    "name": "Incorrect Conversion between Numeric Types",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "No incorrect numeric type conversion patterns found."
+  },
+  {
+    "id": "CWE-682",
+    "name": "Incorrect Calculation",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "No incorrect calculation patterns found."
+  },
+  {
+    "id": "CWE-732",
+    "name": "Incorrect Permission Assignment for Critical Resource",
+    "status": "NOT_FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": "No incorrect permission assignment patterns found."
+  },
+  {
+    "id": "CWE-772",
+    "name": "Missing Release of Resource after Effective Lifetime",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "Resources are properly managed with try-with-resources throughout the codebase."
+  },
+  {
+    "id": "CWE-775",
+    "name": "Missing Release of File Descriptor or Handle after Effective Lifetime",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "No file descriptor or handle leaks found."
+  },
+  {
+    "id": "CWE-778",
+    "name": "Insufficient Logging",
+    "status": "FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": "PhotoServiceImpl.java (~line 99): The empty-file validation branch (file.getSize() <= 0) sets an error result and returns with no log statement. Additionally, the application has no authentication layer, so there is zero logging of authentication/authorization events."
+  },
+  {
+    "id": "CWE-783",
+    "name": "Operator Precedence Logic Error",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "No operator precedence logic errors found."
+  },
+  {
+    "id": "CWE-786",
+    "name": "Access of Memory Location Before Start of Buffer",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++ code. Java prevents access before buffer start via runtime bounds checks."
+  },
+  {
+    "id": "CWE-787",
+    "name": "Out-of-bounds Write",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++ code. Java prevents out-of-bounds writes via runtime array bounds enforcement."
+  },
+  {
+    "id": "CWE-788",
+    "name": "Access of Memory Location After End of Buffer",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++ code. Java prevents access past the end of a buffer via ArrayIndexOutOfBoundsException."
+  },
+  {
+    "id": "CWE-789",
+    "name": "Memory Allocation with Excessive Size Value",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "No excessive memory allocation patterns found."
+  },
+  {
+    "id": "CWE-798",
+    "name": "Use of Hard-coded Credentials",
+    "status": "FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": "src/main/resources/application.properties (lines 11-12): spring.datasource.username=photoalbum / spring.datasource.password=photoalbum\nsrc/main/resources/application-docker.properties (lines 3-4): same credentials hard-coded in the Docker profile"
+  },
+  {
+    "id": "CWE-805",
+    "name": "Buffer Access with Incorrect Length Value",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++ code. Java does not allow manual length-based buffer access that could escape bounds."
+  },
+  {
+    "id": "CWE-820",
+    "name": "Missing Synchronization",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": "All Spring beans hold only final injected fields — no shared mutable state accessed across threads."
+  },
+  {
+    "id": "CWE-821",
+    "name": "Incorrect Synchronization",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": "No synchronization constructs are present to assess for correctness."
+  },
+  {
+    "id": "CWE-822",
+    "name": "Untrusted Pointer Dereference",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++ code. Java does not support raw pointer dereferencing."
+  },
+  {
+    "id": "CWE-823",
+    "name": "Use of Out-of-range Pointer Offset",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++ code. Java does not support pointer arithmetic."
+  },
+  {
+    "id": "CWE-824",
+    "name": "Access of Uninitialized Pointer",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++ code. Java references are always initialized to null before use."
+  },
+  {
+    "id": "CWE-825",
+    "name": "Expired Pointer Dereference",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": "No C/C++ code. Java GC ensures dereferenced objects remain valid as long as a reference is held."
+  },
+  {
+    "id": "CWE-835",
+    "name": "Loop with Unreachable Exit Condition ('Infinite Loop')",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "No infinite loop patterns found."
+  },
+  {
+    "id": "CWE-1057",
+    "name": "Data Access Operations Outside of Expected Data Manager Component",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": "Data access is properly layered through Spring Data JPA repositories."
+  }
+]
