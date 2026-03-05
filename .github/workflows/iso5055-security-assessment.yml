@@ -135,11 +135,24 @@ jobs:
         run: |
           ISSUE_NUMBER="${{ steps.create-issue.outputs.issue_number }}"
 
-          # Assign Copilot to the issue using PAT token
-          if gh issue edit "$ISSUE_NUMBER" --add-assignee "copilot"; then
-            echo "✅ Assigned Copilot to issue #$ISSUE_NUMBER"
+          echo "🤖 Assigning Copilot to issue #$ISSUE_NUMBER..."
+
+          # Get issue node ID for GraphQL
+          ISSUE_NODE_ID=$(gh api repos/${{ github.repository }}/issues/$ISSUE_NUMBER --jq '.node_id')
+
+          # Assign Copilot using GraphQL API with Copilot's bot node ID
+          # BOT_kgDOC9w8XQ is the Copilot Coding Agent's node ID
+          if gh api graphql \
+            -H "GraphQL-Features: issues_copilot_assignment_api_support" \
+            -f query='mutation($issueId: ID!) {
+              addAssigneesToAssignable(input: {assignableId: $issueId, assigneeIds: ["BOT_kgDOC9w8XQ"]}) {
+                clientMutationId
+              }
+            }' \
+            -f issueId="$ISSUE_NODE_ID" 2>/dev/null; then
+            echo "✅ Copilot assigned to issue #$ISSUE_NUMBER"
           else
-            echo "⚠️ Could not assign Copilot automatically. Please assign manually."
+            echo "⚠️ Could not assign Copilot. Please assign manually or enable Copilot Coding Agent."
           fi
 
       - name: Summary
