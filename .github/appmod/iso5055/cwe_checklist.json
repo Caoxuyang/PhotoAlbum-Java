@@ -1,0 +1,415 @@
+[
+  {
+    "id": "CWE-22",
+    "name": "Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')",
+    "status": "NOT_FOUND",
+    "category": "File & Path Security",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-23",
+    "name": "Relative Path Traversal",
+    "status": "NOT_FOUND",
+    "category": "File & Path Security",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-36",
+    "name": "Absolute Path Traversal",
+    "status": "NOT_FOUND",
+    "category": "File & Path Security",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-77",
+    "name": "Improper Neutralization of Special Elements used in a Command ('Command Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-78",
+    "name": "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-79",
+    "name": "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-88",
+    "name": "Improper Neutralization of Argument Delimiters in a Command ('Argument Injection')",
+    "status": "FOUND",
+    "category": "Injection Attacks",
+    "evidence": "PhotoFileController.java:81 sets response header '.header(\"X-Photo-Name\", photo.getOriginalFileName())' directly from user-supplied filename with no CRLF sanitization, enabling HTTP Response Splitting."
+  },
+  {
+    "id": "CWE-89",
+    "name": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-90",
+    "name": "Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-91",
+    "name": "XML Injection (aka Blind XPath Injection)",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-99",
+    "name": "Improper Control of Resource Identifiers ('Resource Injection')",
+    "status": "FOUND",
+    "category": "Injection Attacks",
+    "evidence": "PhotoFileController.java:76 calls MediaType.parseMediaType(photo.getMimeType()) with MIME type from client's Content-Type header stored in DB. Also reflects user-controlled values into X-Photo-ID and X-Photo-Name response headers unsanitized."
+  },
+  {
+    "id": "CWE-119",
+    "name": "Improper Restriction of Operations within the Bounds of a Memory Buffer",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-120",
+    "name": "Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-123",
+    "name": "Write-what-where Condition",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-125",
+    "name": "Out-of-bounds Read",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-130",
+    "name": "Improper Handling of Length Parameter Inconsistency",
+    "status": "FOUND",
+    "category": "Code Quality",
+    "evidence": "PhotoServiceImpl.java lines 92-101: file size validated using file.getSize() (client-reported HTTP Content-Length) BEFORE actual bytes are read with file.getBytes(). Declared size and actual byte count are never reconciled."
+  },
+  {
+    "id": "CWE-259",
+    "name": "Use of Hard-coded Password",
+    "status": "FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": "Hardcoded database password 'photoalbum' found in src/main/resources/application.properties (line 12: spring.datasource.password=photoalbum) and src/main/resources/application-docker.properties (line 4)."
+  },
+  {
+    "id": "CWE-321",
+    "name": "Use of Hard-coded Cryptographic Key",
+    "status": "NOT_FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-415",
+    "name": "Double Free",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-416",
+    "name": "Use After Free",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-434",
+    "name": "Unrestricted Upload of File with Dangerous Type",
+    "status": "FOUND",
+    "category": "File & Path Security",
+    "evidence": "PhotoServiceImpl.java:83 — file.getContentType() is the sole type gate trusting client-supplied Content-Type header, trivially spoofed. No server-side magic-byte/content inspection to verify actual file format."
+  },
+  {
+    "id": "CWE-456",
+    "name": "Missing Initialization of a Variable",
+    "status": "FOUND",
+    "category": "Code Quality",
+    "evidence": "PhotoServiceImpl.java line 115: `byte[] photoData = null;` only assigned inside try block. If file.getBytes() throws RuntimeException, catch(Exception) does NOT return — photoData remains null and is passed to Photo constructor at line 142."
+  },
+  {
+    "id": "CWE-457",
+    "name": "Use of Uninitialized Variable",
+    "status": "FOUND",
+    "category": "Code Quality",
+    "evidence": "PhotoServiceImpl.java lines 113-142: `photoData` (initialized null at line 115) used at line 142 in new Photo() constructor. If RuntimeException thrown by file.getBytes(), catch(Exception) logs warning and falls through — null photoData saved to database."
+  },
+  {
+    "id": "CWE-477",
+    "name": "Use of Obsolete Function",
+    "status": "FOUND",
+    "category": "Code Quality",
+    "evidence": "Photo.java lines 3-7: imports `javax.persistence.*`, `javax.validation.constraints.*` — legacy Java EE namespaces superseded by `jakarta.persistence.*` and `jakarta.validation.*` in Jakarta EE 9+ and Spring Boot 3+."
+  },
+  {
+    "id": "CWE-502",
+    "name": "Deserialization of Untrusted Data",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-543",
+    "name": "Use of Singleton Pattern Without Synchronization in a Multithreaded Context",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-564",
+    "name": "SQL Injection: Hibernate",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-567",
+    "name": "Unsynchronized Access to Shared Data in a Multithreaded Context",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-570",
+    "name": "Expression is Always False",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-571",
+    "name": "Expression is Always True",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-606",
+    "name": "Unchecked Input for Loop Condition",
+    "status": "FOUND",
+    "category": "Code Quality",
+    "evidence": "HomeController.java line 57-68: upload endpoint accepts List<MultipartFile> files from user input with only null/empty check. No upper bound on file count — attacker could submit thousands of files causing the for-each loop to iterate indefinitely and exhaust server resources."
+  },
+  {
+    "id": "CWE-611",
+    "name": "Improper Restriction of XML External Entity Reference",
+    "status": "NOT_FOUND",
+    "category": "File & Path Security",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-643",
+    "name": "Improper Neutralization of Data within XPath Expressions ('XPath Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-652",
+    "name": "Improper Neutralization of Data within XQuery Expressions ('XQuery Injection')",
+    "status": "NOT_FOUND",
+    "category": "Injection Attacks",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-662",
+    "name": "Improper Synchronization",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-665",
+    "name": "Improper Initialization",
+    "status": "FOUND",
+    "category": "Code Quality",
+    "evidence": "PhotoServiceImpl.java line 83: `file.getContentType().toLowerCase()` — getContentType() can return null for malformed multipart requests; calling .toLowerCase() on null throws NullPointerException. No null check before use."
+  },
+  {
+    "id": "CWE-667",
+    "name": "Improper Locking",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-672",
+    "name": "Operation on a Resource after Expiration or Release",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-681",
+    "name": "Incorrect Conversion between Numeric Types",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-682",
+    "name": "Incorrect Calculation",
+    "status": "FOUND",
+    "category": "Code Quality",
+    "evidence": "PhotoRepository.java lines 26-36: Oracle ROWNUM misuse in pagination query — ROWNUM is assigned before ORDER BY executes, so the 10-row limit does not guarantee the 10 most-recent photos. Returns 10 arbitrary rows from unordered set."
+  },
+  {
+    "id": "CWE-732",
+    "name": "Incorrect Permission Assignment for Critical Resource",
+    "status": "NOT_FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-772",
+    "name": "Missing Release of Resource after Effective Lifetime",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-775",
+    "name": "Missing Release of File Descriptor or Handle after Effective Lifetime",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-778",
+    "name": "Insufficient Logging",
+    "status": "FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": "Security-sensitive operations lack audit context. Delete endpoint logs only photo ID with no client identity, IP, or session. Zero authentication/authorization — access-denial and auth-failure events never logged. No security audit trail possible."
+  },
+  {
+    "id": "CWE-783",
+    "name": "Operator Precedence Logic Error",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-786",
+    "name": "Access of Memory Location Before Start of Buffer",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-787",
+    "name": "Out-of-bounds Write",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-788",
+    "name": "Access of Memory Location After End of Buffer",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-789",
+    "name": "Memory Allocation with Excessive Size Value",
+    "status": "FOUND",
+    "category": "Code Quality",
+    "evidence": "PhotoServiceImpl.java line 119: `file.getBytes()` reads entire file into heap-allocated byte array. Size check relies on client-reported file.getSize(), not actual bytes. Combined with no per-request file count limit, multiple large uploads can trigger heap exhaustion (OutOfMemoryError)."
+  },
+  {
+    "id": "CWE-798",
+    "name": "Use of Hard-coded Credentials",
+    "status": "FOUND",
+    "category": "Credentials & Secrets",
+    "evidence": "Both database username ('photoalbum') and password ('photoalbum') hardcoded in committed source files: application.properties lines 11-12 and application-docker.properties lines 3-4. Stored in plaintext in version control."
+  },
+  {
+    "id": "CWE-805",
+    "name": "Buffer Access with Incorrect Length Value",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-820",
+    "name": "Missing Synchronization",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-821",
+    "name": "Incorrect Synchronization",
+    "status": "NOT_FOUND",
+    "category": "Concurrency & Synchronization",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-822",
+    "name": "Untrusted Pointer Dereference",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-823",
+    "name": "Use of Out-of-range Pointer Offset",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-824",
+    "name": "Access of Uninitialized Pointer",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-825",
+    "name": "Expired Pointer Dereference",
+    "status": "NOT_FOUND",
+    "category": "Memory Safety",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-835",
+    "name": "Loop with Unreachable Exit Condition ('Infinite Loop')",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  },
+  {
+    "id": "CWE-1057",
+    "name": "Data Access Operations Outside of Expected Data Manager Component",
+    "status": "NOT_FOUND",
+    "category": "Code Quality",
+    "evidence": ""
+  }
+]

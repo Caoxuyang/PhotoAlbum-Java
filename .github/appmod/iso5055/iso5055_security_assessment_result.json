@@ -1,52 +1,124 @@
 {
-  "assessment_date": "2026-03-05T09:30:00.000Z",
+  "assessment_date": "2026-03-05T11:45:09.168Z",
   "summary": {
-    "total_issues": 5,
-    "mandatory_count": 2,
-    "optional_count": 1,
-    "potential_count": 1,
+    "total_issues": 14,
+    "mandatory_count": 1,
+    "optional_count": 3,
+    "potential_count": 9,
     "information_count": 1
   },
   "findings": [
     {
-      "id": "CWE-89",
-      "name": "SQL Injection",
+      "id": "CWE-88",
+      "name": "Improper Neutralization of Argument Delimiters in a Command ('Argument Injection')",
       "category": "Injection Attacks",
-      "severity": "mandatory",
-      "description": "The product constructs all or part of an SQL command using externally-influenced input from an upstream component, but it does not neutralize or incorrectly neutralizes special elements that could modify the intended SQL command.",
-      "evidence": "src/main/java/com/example/photoalbum/repository/PhotoRepository.java:45 — String concatenation used to build SQL query with user input: \"SELECT * FROM photos WHERE title LIKE '%\" + searchTerm + \"%'\". This allows SQL injection attacks."
-    },
-    {
-      "id": "CWE-79",
-      "name": "Cross-site Scripting (XSS)",
-      "category": "Injection Attacks",
-      "severity": "mandatory",
-      "description": "The product does not neutralize or incorrectly neutralizes user-controllable input before it is placed in output that is used as a web page served to other users.",
-      "evidence": "src/main/java/com/example/photoalbum/controller/PhotoController.java:78 — User-provided photo description is rendered directly in HTML without escaping: model.addAttribute(\"description\", photo.getDescription()). Template does not use th:text for safe rendering."
-    },
-    {
-      "id": "CWE-22",
-      "name": "Path Traversal",
-      "category": "File & Path Security",
       "severity": "optional",
-      "description": "The product uses external input to construct a pathname that is intended to identify a file or directory located underneath a restricted parent directory, but does not properly neutralize special elements that can cause the pathname to resolve outside of the restricted directory.",
-      "evidence": "src/main/java/com/example/photoalbum/service/FileStorageService.java:32 — User-supplied filename used directly in path construction: Paths.get(uploadDir, filename). No validation for '../' sequences."
+      "description": "The product constructs a string for a command to be executed by a separate component in another control sphere, but it does not properly delimit the intended arguments, options, or switches within that command string.",
+      "evidence": "PhotoFileController.java:81 sets response header '.header(\"X-Photo-Name\", photo.getOriginalFileName())' directly from user-supplied filename with no CRLF sanitization, enabling HTTP Response Splitting."
     },
     {
-      "id": "CWE-532",
-      "name": "Insertion of Sensitive Information into Log File",
-      "category": "Information Exposure",
+      "id": "CWE-99",
+      "name": "Improper Control of Resource Identifiers ('Resource Injection')",
+      "category": "Injection Attacks",
       "severity": "potential",
-      "description": "Information written to log files can be of a sensitive nature and give valuable guidance to an attacker or expose sensitive user information.",
-      "evidence": "src/main/java/com/example/photoalbum/service/AuthService.java:56 — User credentials logged at DEBUG level: logger.debug(\"Login attempt for user: {} with password: {}\", username, password). Sensitive data exposed in logs."
+      "description": "The product receives input from an upstream component, but it does not restrict or incorrectly restricts the input before it is used as an identifier for a resource that may be outside the intended sphere of control.",
+      "evidence": "PhotoFileController.java:76 calls MediaType.parseMediaType(photo.getMimeType()) with MIME type from client's Content-Type header stored in DB. Also reflects user-controlled values into X-Photo-ID and X-Photo-Name response headers unsanitized."
+    },
+    {
+      "id": "CWE-130",
+      "name": "Improper Handling of Length Parameter Inconsistency",
+      "category": "Code Quality",
+      "severity": "potential",
+      "description": "The product parses a formatted message or structure, but it does not handle or incorrectly handles a length field that is inconsistent with the actual length of the associated data.",
+      "evidence": "PhotoServiceImpl.java lines 92-101: file size validated using file.getSize() (client-reported HTTP Content-Length) BEFORE actual bytes are read with file.getBytes(). Declared size and actual byte count are never reconciled."
+    },
+    {
+      "id": "CWE-259",
+      "name": "Use of Hard-coded Password",
+      "category": "Credentials & Secrets",
+      "severity": "optional",
+      "description": "The product contains a hard-coded password, which it uses for its own inbound authentication or for outbound communication to external components.",
+      "evidence": "Hardcoded database password 'photoalbum' found in src/main/resources/application.properties (line 12: spring.datasource.password=photoalbum) and src/main/resources/application-docker.properties (line 4)."
+    },
+    {
+      "id": "CWE-434",
+      "name": "Unrestricted Upload of File with Dangerous Type",
+      "category": "File & Path Security",
+      "severity": "mandatory",
+      "description": "The product allows the upload or transfer of dangerous file types that are automatically processed within its environment.",
+      "evidence": "PhotoServiceImpl.java:83 — file.getContentType() is the sole type gate trusting client-supplied Content-Type header, trivially spoofed. No server-side magic-byte/content inspection to verify actual file format."
+    },
+    {
+      "id": "CWE-456",
+      "name": "Missing Initialization of a Variable",
+      "category": "Code Quality",
+      "severity": "potential",
+      "description": "The product does not initialize critical variables, which causes the execution environment to use unexpected values.",
+      "evidence": "PhotoServiceImpl.java line 115: `byte[] photoData = null;` only assigned inside try block. If file.getBytes() throws RuntimeException, catch(Exception) does NOT return — photoData remains null and is passed to Photo constructor at line 142."
+    },
+    {
+      "id": "CWE-457",
+      "name": "Use of Uninitialized Variable",
+      "category": "Code Quality",
+      "severity": "potential",
+      "description": "The code uses a variable that has not been initialized, leading to unpredictable or unintended results.",
+      "evidence": "PhotoServiceImpl.java lines 113-142: `photoData` (initialized null at line 115) used at line 142 in new Photo() constructor. If RuntimeException thrown by file.getBytes(), catch(Exception) logs warning and falls through — null photoData saved to database."
     },
     {
       "id": "CWE-477",
       "name": "Use of Obsolete Function",
       "category": "Code Quality",
       "severity": "information",
-      "description": "The code uses deprecated or obsolete functions, suggesting the code has not been actively maintained.",
-      "evidence": "pom.xml:25 — Using outdated Spring Boot version 2.5.0 which has known security vulnerabilities. Recommend upgrading to latest 3.x version."
+      "description": "The code uses deprecated or obsolete functions, which suggests that the code has not been actively reviewed or maintained.",
+      "evidence": "Photo.java lines 3-7: imports `javax.persistence.*`, `javax.validation.constraints.*` — legacy Java EE namespaces superseded by `jakarta.persistence.*` and `jakarta.validation.*` in Jakarta EE 9+ and Spring Boot 3+."
+    },
+    {
+      "id": "CWE-606",
+      "name": "Unchecked Input for Loop Condition",
+      "category": "Code Quality",
+      "severity": "potential",
+      "description": "The product does not properly check inputs that are used for loop conditions, potentially leading to a denial of service or other consequences because of excessive looping.",
+      "evidence": "HomeController.java line 57-68: upload endpoint accepts List<MultipartFile> files from user input with only null/empty check. No upper bound on file count — attacker could submit thousands of files causing the for-each loop to iterate indefinitely and exhaust server resources."
+    },
+    {
+      "id": "CWE-665",
+      "name": "Improper Initialization",
+      "category": "Code Quality",
+      "severity": "potential",
+      "description": "The product does not initialize or incorrectly initializes a resource, which might leave the resource in an unexpected state when it is accessed or used.",
+      "evidence": "PhotoServiceImpl.java line 83: `file.getContentType().toLowerCase()` — getContentType() can return null for malformed multipart requests; calling .toLowerCase() on null throws NullPointerException. No null check before use."
+    },
+    {
+      "id": "CWE-682",
+      "name": "Incorrect Calculation",
+      "category": "Code Quality",
+      "severity": "potential",
+      "description": "The product performs a calculation that generates incorrect or unintended results that are later used in security-critical decisions or resource management.",
+      "evidence": "PhotoRepository.java lines 26-36: Oracle ROWNUM misuse in pagination query — ROWNUM is assigned before ORDER BY executes, so the 10-row limit does not guarantee the 10 most-recent photos. Returns 10 arbitrary rows from unordered set."
+    },
+    {
+      "id": "CWE-778",
+      "name": "Insufficient Logging",
+      "category": "Credentials & Secrets",
+      "severity": "potential",
+      "description": "When a security-critical event occurs, the product either does not record the event or omits important details about the event when logging it.",
+      "evidence": "Security-sensitive operations lack audit context. Delete endpoint logs only photo ID with no client identity, IP, or session. Zero authentication/authorization — access-denial and auth-failure events never logged. No security audit trail possible."
+    },
+    {
+      "id": "CWE-789",
+      "name": "Memory Allocation with Excessive Size Value",
+      "category": "Code Quality",
+      "severity": "potential",
+      "description": "The product allocates memory based on an untrusted, large size value, but it does not ensure that the size is within expected limits, allowing arbitrary amounts of memory to be allocated.",
+      "evidence": "PhotoServiceImpl.java line 119: `file.getBytes()` reads entire file into heap-allocated byte array. Size check relies on client-reported file.getSize(), not actual bytes. Combined with no per-request file count limit, multiple large uploads can trigger heap exhaustion (OutOfMemoryError)."
+    },
+    {
+      "id": "CWE-798",
+      "name": "Use of Hard-coded Credentials",
+      "category": "Credentials & Secrets",
+      "severity": "optional",
+      "description": "The product contains hard-coded credentials, such as a password or cryptographic key.",
+      "evidence": "Both database username ('photoalbum') and password ('photoalbum') hardcoded in committed source files: application.properties lines 11-12 and application-docker.properties lines 3-4. Stored in plaintext in version control."
     }
   ]
 }
