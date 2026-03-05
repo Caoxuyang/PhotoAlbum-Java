@@ -79,8 +79,8 @@ public class PhotoServiceImpl implements PhotoService {
         result.setFileName(file.getOriginalFilename());
 
         try {
-            // Validate file type
-            if (!allowedMimeTypes.contains(file.getContentType().toLowerCase())) {
+            // Validate file type using client-supplied Content-Type as a first pass
+            if (file.getContentType() == null || !allowedMimeTypes.contains(file.getContentType().toLowerCase())) {
                 result.setSuccess(false);
                 result.setErrorMessage("File type not supported. Please upload JPEG, PNG, GIF, or WebP images.");
                 logger.warn("Upload rejected: Invalid file type {} for {}", 
@@ -101,6 +101,7 @@ public class PhotoServiceImpl implements PhotoService {
             if (file.getSize() <= 0) {
                 result.setSuccess(false);
                 result.setErrorMessage("File is empty.");
+                logger.warn("Upload rejected: Empty file {}", file.getOriginalFilename());
                 return result;
             }
 
@@ -117,7 +118,17 @@ public class PhotoServiceImpl implements PhotoService {
             try {
                 // Read file content for database storage
                 photoData = file.getBytes();
-                
+
+                // CWE-434: Validate actual file content by inspecting magic bytes
+                // to prevent a malicious actor from bypassing the Content-Type check
+                if (!isAllowedImageContent(photoData)) {
+                    result.setSuccess(false);
+                    result.setErrorMessage("File content does not match an allowed image format.");
+                    logger.warn("Upload rejected: Content-type mismatch / invalid magic bytes for {}", 
+                        file.getOriginalFilename());
+                    return result;
+                }
+
                 // Extract image dimensions from byte array
                 try (ByteArrayInputStream bis = new ByteArrayInputStream(photoData)) {
                     BufferedImage image = ImageIO.read(bis);
@@ -134,6 +145,14 @@ public class PhotoServiceImpl implements PhotoService {
             } catch (Exception ex) {
                 logger.warn("Could not extract image dimensions for {}", file.getOriginalFilename(), ex);
                 // Continue without dimensions - not critical
+            }
+
+            // CWE-665: Guard against a null photoData caused by a swallowed exception
+            if (photoData == null) {
+                result.setSuccess(false);
+                result.setErrorMessage("Error reading file data. Please try again.");
+                logger.warn("Upload rejected: photoData is null for {}", file.getOriginalFilename());
+                return result;
             }
 
             // Create photo entity with database BLOB storage
@@ -225,5 +244,42 @@ public class PhotoServiceImpl implements PhotoService {
         }
         int lastDotIndex = filename.lastIndexOf('.');
         return lastDotIndex > 0 ? filename.substring(lastDotIndex) : "";
+    }
+
+    /**
+     * CWE-434: Validate the actual file content by checking magic bytes so that
+     * a client cannot bypass the MIME-type check by sending a dangerous file with
+     * an allowed Content-Type header.
+     *
+     * Recognised signatures:
+     *   JPEG  – FF D8
+     *   PNG   – 89 50 4E 47 0D 0A 1A 0A
+     *   GIF87a / GIF89a – 47 49 46 38 37 61 / 47 49 46 38 39 61
+     *   WebP  – 52 49 46 46 .. .. .. .. 57 45 42 50
+     */
+    private boolean isAllowedImageContent(byte[] data) {
+        if (data == null || data.length < 12) {
+            return false;
+        }
+        // JPEG: starts with FF D8
+        if ((data[0] & 0xFF) == 0xFF && (data[1] & 0xFF) == 0xD8) {
+            return true;
+        }
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        if ((data[0] & 0xFF) == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47
+                && data[4] == 0x0D && data[5] == 0x0A && data[6] == 0x1A && data[7] == 0x0A) {
+            return true;
+        }
+        // GIF87a or GIF89a: 47 49 46 38 (37|39) 61
+        if (data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x38
+                && (data[4] == 0x37 || data[4] == 0x39) && data[5] == 0x61) {
+            return true;
+        }
+        // WebP: RIFF (4 bytes of size) WEBP
+        if (data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46
+                && data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50) {
+            return true;
+        }
+        return false;
     }
 }

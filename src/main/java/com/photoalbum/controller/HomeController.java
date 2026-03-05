@@ -5,6 +5,7 @@ import com.photoalbum.model.UploadResult;
 import com.photoalbum.service.PhotoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,9 +27,12 @@ public class HomeController {
     private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
 
     private final PhotoService photoService;
+    private final int maxFilesPerUpload;
 
-    public HomeController(PhotoService photoService) {
+    public HomeController(PhotoService photoService,
+            @Value("${app.file-upload.max-files-per-upload:10}") int maxFilesPerUpload) {
         this.photoService = photoService;
+        this.maxFilesPerUpload = maxFilesPerUpload;
     }
 
     /**
@@ -62,6 +66,14 @@ public class HomeController {
         if (files == null || files.isEmpty()) {
             response.put("success", false);
             response.put("error", "No files provided");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // CWE-606: Guard against an unbounded number of files in a single request
+        if (files.size() > maxFilesPerUpload) {
+            response.put("success", false);
+            response.put("error", String.format("Too many files. Maximum %d files allowed per upload.", maxFilesPerUpload));
+            logger.warn("Upload rejected: {} files submitted, limit is {}", files.size(), maxFilesPerUpload);
             return ResponseEntity.badRequest().body(response);
         }
 

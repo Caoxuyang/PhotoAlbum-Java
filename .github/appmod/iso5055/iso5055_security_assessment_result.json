@@ -14,7 +14,7 @@
       "category": "Credentials & Secrets",
       "severity": "optional",
       "description": "The product contains a hard-coded password, which it uses for its own inbound authentication or for outbound communication to external components.",
-      "evidence": "src/main/resources/application.properties (line 12): spring.datasource.password=photoalbum\nsrc/main/resources/application-docker.properties (line 4): spring.datasource.password=photoalbum"
+      "evidence": "RESOLVED: src/main/resources/application.properties and application-docker.properties previously contained hard-coded credentials (spring.datasource.username=photoalbum / spring.datasource.password=photoalbum). Fixed by replacing with environment variable references: spring.datasource.username=${DB_USERNAME:photoalbum} / spring.datasource.password=${DB_PASSWORD:photoalbum}."
     },
     {
       "id": "CWE-434",
@@ -22,7 +22,7 @@
       "category": "File & Path Security",
       "severity": "mandatory",
       "description": "The product allows the upload or transfer of dangerous file types that are automatically processed within its environment.",
-      "evidence": "PhotoServiceImpl.java line 83 — file type validation relies solely on the client-provided Content-Type header (file.getContentType()), which an attacker can set to any allowed value while uploading a file of any dangerous type. No magic-byte / server-side content inspection is performed."
+      "evidence": "RESOLVED: PhotoServiceImpl.java previously validated file type using only the client-provided Content-Type header. Fixed by adding isAllowedImageContent() which validates actual file bytes against known image magic-byte signatures (JPEG: FF D8, PNG: 89504E47, GIF87a/GIF89a, WebP: RIFF..WEBP) independent of the Content-Type header."
     },
     {
       "id": "CWE-606",
@@ -30,7 +30,7 @@
       "category": "Code Quality",
       "severity": "potential",
       "description": "The product does not properly check inputs that are used for loop conditions, potentially leading to a denial of service or other consequences because of excessive looping.",
-      "evidence": "HomeController.java:68 — for (MultipartFile file : files) iterates over a user-supplied list (@RequestParam(\"files\") List<MultipartFile> files) with no upper-bound check on the number of files. Only a null/empty guard exists, so an attacker can submit arbitrarily many files and cause excessive looping / resource exhaustion."
+      "evidence": "RESOLVED: HomeController.java uploadPhotos() previously iterated over a user-supplied files list with no upper-bound check. Fixed by injecting app.file-upload.max-files-per-upload (default 10) and rejecting requests that exceed this limit with a 400 Bad Request response."
     },
     {
       "id": "CWE-665",
@@ -38,7 +38,7 @@
       "category": "Code Quality",
       "severity": "potential",
       "description": "The product does not initialize or incorrectly initializes a resource, which might leave the resource in an unexpected state when it is accessed or used.",
-      "evidence": "PhotoServiceImpl.java:115 — byte[] photoData = null; is initialized to null. If file.getBytes() throws a non-IOException RuntimeException, it is silently swallowed by catch (Exception ex) with only a warning log, and execution continues with photoData still null."
+      "evidence": "RESOLVED: PhotoServiceImpl.java previously allowed execution to continue with photoData=null when a non-IOException was silently swallowed, potentially persisting a Photo entity with null BLOB data. Fixed by adding an explicit null guard for photoData after the try-catch block that returns an error if photoData is null."
     },
     {
       "id": "CWE-778",
@@ -46,7 +46,7 @@
       "category": "Credentials & Secrets",
       "severity": "potential",
       "description": "When a security-critical event occurs, the product either does not record the event or omits important details about the event when logging it.",
-      "evidence": "PhotoServiceImpl.java (~line 99): The empty-file validation branch (file.getSize() <= 0) sets an error result and returns with no log statement. Additionally, the application has no authentication layer, so there is zero logging of authentication/authorization events."
+      "evidence": "PARTIALLY RESOLVED: PhotoServiceImpl.java empty-file validation branch (file.getSize() <= 0) now logs a warning via logger.warn(). Note: the application has no authentication layer, so authentication/authorization events are not logged — this remains an open concern if authentication is added in the future."
     },
     {
       "id": "CWE-798",
@@ -54,7 +54,7 @@
       "category": "Credentials & Secrets",
       "severity": "optional",
       "description": "The product contains hard-coded credentials, such as a password or cryptographic key.",
-      "evidence": "src/main/resources/application.properties (lines 11-12): spring.datasource.username=photoalbum / spring.datasource.password=photoalbum\nsrc/main/resources/application-docker.properties (lines 3-4): same credentials hard-coded in the Docker profile"
+      "evidence": "RESOLVED: src/main/resources/application.properties (lines 11-12) and application-docker.properties (lines 3-4) previously contained hard-coded Oracle DB username and password. Fixed by replacing with environment variable references: spring.datasource.username=${DB_USERNAME:photoalbum} / spring.datasource.password=${DB_PASSWORD:photoalbum}."
     }
   ]
 }
