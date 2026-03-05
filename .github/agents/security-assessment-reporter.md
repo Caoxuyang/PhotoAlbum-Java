@@ -100,16 +100,31 @@ The issue number is provided in the issue body that assigned you this task. Look
 - `**Issue Number:** #XX`
 - `**Issue URL:** https://github.com/.../issues/XX`
 
+🔑 **AUTHENTICATION: You MUST use PAT_TOKEN for authentication!**
+
+The default GITHUB_TOKEN has read-only permissions. You MUST override it with PAT_TOKEN:
+
 **Use this exact command:**
 
 ```bash
-gh issue comment <ISSUE_NUMBER> --repo <OWNER>/<REPO> --body "<YOUR_REPORT>"
+GH_TOKEN="${PAT_TOKEN}" gh issue comment <ISSUE_NUMBER> --repo <OWNER>/<REPO> --body "<YOUR_REPORT>"
 ```
 
 **Example:**
 ```bash
-gh issue comment 8 --repo Caoxuyang/PhotoAlbum-Java --body "## 📊 ISO 5055 Security Assessment Report..."
+GH_TOKEN="${PAT_TOKEN}" gh issue comment 8 --repo Caoxuyang/PhotoAlbum-Java --body "## 📊 ISO 5055 Security Assessment Report..."
 ```
+
+**Alternative (REST API):**
+```bash
+curl -X POST \
+  -H "Authorization: token ${PAT_TOKEN}" \
+  -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/<OWNER>/<REPO>/issues/<ISSUE_NUMBER>/comments" \
+  -d '{"body": "<YOUR_REPORT>"}'
+```
+
+⛔ **DO NOT use plain `gh issue comment` without `GH_TOKEN="${PAT_TOKEN}"`** - it will fail with HTTP 403.
 
 ⛔ **DO NOT post to issue #1 or any other issue.** Only post to the issue number specified in your assignment.
 

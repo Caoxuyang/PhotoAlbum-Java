@@ -50,6 +50,47 @@ Based on the tool's guidance:
 
 ### Step 4: Create Pull Request
 
+🔑 **AUTHENTICATION: You MUST use PAT_TOKEN for git and gh operations!**
+
+The default GITHUB_TOKEN has read-only permissions. Use PAT_TOKEN for all operations:
+
+```bash
+# Configure git to use PAT_TOKEN
+git config --global url."https://${PAT_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+# Create branch and commit
+git checkout -b fix/cwe-XXX-description
+git add <changed-files>
+git commit -m "🔒 Fix CWE-XXX: Brief description"
+
+# Push with PAT_TOKEN
+git push -u origin fix/cwe-XXX-description
+
+# Create PR with PAT_TOKEN
+GH_TOKEN="${PAT_TOKEN}" gh pr create \
+  --title "🔒 Fix [CWE-ID]: [Brief description]" \
+  --body "$(cat <<'EOF'
+## 🔒 Security Fix: [CWE-ID]
+
+### Summary
+Fixed [vulnerability name] in `[file path]`.
+
+### Changes
+- [Describe what was changed]
+- [Describe how the vulnerability was addressed]
+
+### Testing
+- [How the fix was verified]
+
+### References
+- Fixes #[ISSUE_NUMBER]
+- CWE: https://cwe.mitre.org/data/definitions/[ID].html
+EOF
+)"
+```
+
+⛔ **DO NOT use plain `gh pr create` without `GH_TOKEN="${PAT_TOKEN}"`** - it will fail with HTTP 403.
+
 Create a PR with:
 - **Title**: `🔒 Fix [CWE-ID]: [Brief description]`
 - **Body**: Include:
