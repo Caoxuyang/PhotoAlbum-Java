@@ -1,0 +1,234 @@
+name: "ISO5055 Security Assessment & Auto-Fix"
+
+on:
+  # Nightly scan
+  schedule:
+    - cron: '0 2 * * *'  # 2 AM UTC daily
+
+  # Manual trigger with options
+  workflow_dispatch:
+    inputs:
+      severity_filter:
+        description: 'Minimum severity level to process'
+        required: true
+        default: 'mandatory'
+        type: choice
+        options:
+          - mandatory
+          - optional
+          - potential
+          - all
+      auto_fix:
+        description: 'Trigger Copilot to auto-fix issues'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  REPORT_PATH: ".github/appmod/iso5055/iso5055_security_assessment_result.json"
+
+jobs:
+  assess-and-create-issue:
+    runs-on: ubuntu-latest
+    outputs:
+      issue_number: ${{ steps.create-issue.outputs.issue_number }}
+      has_findings: ${{ steps.filter.outputs.has_findings }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for assessment report
+        id: check-report
+        run: |
+          if [ -f "$REPORT_PATH" ]; then
+            echo "report_exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Assessment report found"
+          else
+            echo "report_exists=false" >> $GITHUB_OUTPUT
+            echo "❌ No assessment report found at $REPORT_PATH"
+            echo "Please run the appmod-iso5055-security-assessment tool first"
+            exit 1
+          fi
+
+      - name: Filter findings by severity
+        id: filter
+        run: |
+          SEVERITY="${{ inputs.severity_filter }}"
+          SEVERITY="${SEVERITY:-mandatory}"
+
+          echo "📋 Filtering findings with severity: $SEVERITY"
+
+          # Build jq filter based on severity
+          case "$SEVERITY" in
+            mandatory)
+              FILTER='.findings | map(select(.severity == "mandatory"))'
+              ;;
+            optional)
+              FILTER='.findings | map(select(.severity == "mandatory" or .severity == "optional"))'
+              ;;
+            potential)
+              FILTER='.findings | map(select(.severity == "mandatory" or .severity == "optional" or .severity == "potential"))'
+              ;;
+            all)
+              FILTER='.findings'
+              ;;
+          esac
+
+          # Extract filtered findings to file (avoid output size limits)
+          jq "$FILTER" "$REPORT_PATH" > filtered_findings.json
+          FILTERED_COUNT=$(jq 'length' filtered_findings.json)
+
+          echo "filtered_count=$FILTERED_COUNT" >> $GITHUB_OUTPUT
+          echo "severity=$SEVERITY" >> $GITHUB_OUTPUT
+
+          if [ "$FILTERED_COUNT" -gt 0 ]; then
+            echo "has_findings=true" >> $GITHUB_OUTPUT
+            echo "✅ Found $FILTERED_COUNT findings to process"
+          else
+            echo "has_findings=false" >> $GITHUB_OUTPUT
+            echo "✅ No findings match the severity filter"
+          fi
+
+      - name: Generate issue body
+        id: generate-body
+        if: steps.filter.outputs.has_findings == 'true'
+        run: |
+          SEVERITY="${{ steps.filter.outputs.severity }}"
+          SEVERITY_UPPER=$(echo "$SEVERITY" | tr '[:lower:]' '[:upper:]')
+
+          # Extract summary from report
+          MANDATORY_COUNT=$(jq -r '.summary.mandatory_count' "$REPORT_PATH")
+          OPTIONAL_COUNT=$(jq -r '.summary.optional_count' "$REPORT_PATH")
+          POTENTIAL_COUNT=$(jq -r '.summary.potential_count' "$REPORT_PATH")
+          INFO_COUNT=$(jq -r '.summary.information_count' "$REPORT_PATH")
+          TOTAL_COUNT=$(jq -r '.summary.total_issues' "$REPORT_PATH")
+          ASSESSMENT_DATE=$(jq -r '.assessment_date' "$REPORT_PATH")
+
+          # Start building issue body
+          cat > issue_body.md << EOF
+          ## 🔒 ISO 5055 Security Assessment Report
+
+          **Assessment Date:** $ASSESSMENT_DATE
+          **Severity Filter:** $SEVERITY_UPPER
+          **Repository:** ${{ github.repository }}
+
+          ### 📊 Summary
+
+          | Category | Count |
+          |----------|-------|
+          | 🔴 Mandatory | $MANDATORY_COUNT |
+          | 🟠 Optional | $OPTIONAL_COUNT |
+          | 🟡 Potential | $POTENTIAL_COUNT |
+          | 🔵 Information | $INFO_COUNT |
+          | **Total** | $TOTAL_COUNT |
+
+          ---
+
+          ### 🎯 Findings to Fix
+
+          EOF
+
+          # Generate findings section from filtered results
+          jq -r '.[] | "#### [\(.severity | ascii_upcase)] \(.id): \(.name)\n\n**Category:** \(.category)\n\n**Description:**\n> \(.description)\n\n**Evidence:**\n```\n\(.evidence)\n```\n\n---\n"' filtered_findings.json >> issue_body.md
+
+          # Add Copilot instructions
+          cat >> issue_body.md << 'EOF'
+
+          ### 🤖 Instructions for Copilot
+
+          Please fix the security vulnerabilities listed above. For each finding:
+
+          1. Navigate to the file and line mentioned in the evidence
+          2. Apply the appropriate security fix based on the CWE guidance
+          3. Ensure the fix doesn't break existing functionality
+          4. Add appropriate input validation, sanitization, or security controls
+
+          **Priority:** Fix MANDATORY issues first, then proceed to lower severity levels.
+
+          EOF
+
+          # Add collapsible raw JSON
+          echo "" >> issue_body.md
+          echo "<details>" >> issue_body.md
+          echo "<summary>📄 Raw JSON Report</summary>" >> issue_body.md
+          echo "" >> issue_body.md
+          echo '```json' >> issue_body.md
+          cat "$REPORT_PATH" >> issue_body.md
+          echo '```' >> issue_body.md
+          echo "</details>" >> issue_body.md
+
+          echo "✅ Issue body generated"
+
+      - name: Create GitHub Issue
+        id: create-issue
+        if: steps.filter.outputs.has_findings == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SEVERITY="${{ steps.filter.outputs.severity }}"
+          SEVERITY_UPPER=$(echo "$SEVERITY" | tr '[:lower:]' '[:upper:]')
+          COUNT="${{ steps.filter.outputs.filtered_count }}"
+
+          TITLE="🔒 [ISO5055] Security Assessment: $COUNT $SEVERITY_UPPER findings require attention"
+
+          # Create labels if they don't exist (ignore errors)
+          gh label create "security" --color "d73a4a" --description "Security related" 2>/dev/null || true
+          gh label create "iso5055" --color "0052cc" --description "ISO 5055 compliance" 2>/dev/null || true
+          gh label create "automated" --color "bfd4f2" --description "Automatically generated" 2>/dev/null || true
+          gh label create "copilot" --color "7057ff" --description "For Copilot to handle" 2>/dev/null || true
+
+          ISSUE_URL=$(gh issue create \
+            --title "$TITLE" \
+            --body-file issue_body.md \
+            --label "security,iso5055,automated,copilot")
+
+          ISSUE_NUMBER=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
+          echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+          echo "issue_url=$ISSUE_URL" >> $GITHUB_OUTPUT
+
+          echo "✅ Created issue #$ISSUE_NUMBER: $ISSUE_URL"
+
+      - name: Assign to Copilot for auto-fix
+        if: steps.filter.outputs.has_findings == 'true' && inputs.auto_fix == true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER="${{ steps.create-issue.outputs.issue_number }}"
+
+          # Assign Copilot to the issue (triggers Copilot coding agent)
+          gh issue edit "$ISSUE_NUMBER" --add-assignee "@copilot" || echo "Note: Could not assign @copilot directly"
+
+          # Add comment to trigger Copilot with specific instructions
+          gh issue comment "$ISSUE_NUMBER" --body "Hey @copilot, please fix the security vulnerabilities in this issue.
+
+          **Instructions:**
+          1. Start with MANDATORY severity issues first
+          2. For each issue, check the evidence field for the exact file and line
+          3. Apply the security fix based on CWE best practices
+          4. Create a single PR with all fixes
+          5. Include tests if applicable
+
+          Thanks!"
+
+          echo "✅ Requested Copilot to fix issues in #$ISSUE_NUMBER"
+
+      - name: Summary
+        run: |
+          echo "## 📋 ISO5055 Security Assessment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.filter.outputs.has_findings }}" == "true" ]; then
+            echo "✅ **Issue Created:** #${{ steps.create-issue.outputs.issue_number }}" >> $GITHUB_STEP_SUMMARY
+            echo "📊 **Findings:** ${{ steps.filter.outputs.filtered_count }}" >> $GITHUB_STEP_SUMMARY
+            echo "🎯 **Severity Filter:** ${{ steps.filter.outputs.severity }}" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ inputs.auto_fix }}" == "true" ]; then
+              echo "🤖 **Copilot:** Assigned to fix issues" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "✅ No findings match the severity filter. Repository is clean!" >> $GITHUB_STEP_SUMMARY
+          fi
