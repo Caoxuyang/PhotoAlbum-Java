@@ -184,9 +184,10 @@ Ensure Copilot Coding Agent is enabled:
    ```
 
 3. **Copilot executes `security-assessment-reporter` agent:**
+   - Reads issue body to get correct issue number
    - Calls `appmod-iso5055-security-assessment` MCP tool
    - Formats results as markdown with `<!-- ASSESSMENT_VERIFIED -->` marker
-   - Posts comment to issue using `PAT_TOKEN`
+   - Posts comment using `add_issue_comment` MCP tool (uses `PAT_TOKEN` automatically)
 
 ### Output
 
@@ -324,9 +325,10 @@ Task: Fix CWE-89 vulnerability as identified in the evidence above.
 **Purpose:** READ-ONLY security assessment. Reports findings but NEVER fixes code.
 
 **Allowed Actions:**
+- ✅ Read issue body to get correct issue number
 - ✅ Call `appmod-iso5055-security-assessment` tool
 - ✅ Format results as markdown
-- ✅ Post comment using `GH_TOKEN="${PAT_TOKEN}" gh issue comment`
+- ✅ Post comment using `add_issue_comment` MCP tool
 
 **Forbidden Actions:**
 - ❌ Edit any source file
@@ -346,7 +348,7 @@ Task: Fix CWE-89 vulnerability as identified in the evidence above.
 - ✅ Call `appmod-run-task` tool
 - ✅ Make code changes to fix vulnerability
 - ✅ Create branch, commit, push (using `PAT_TOKEN`)
-- ✅ Create PR (using `GH_TOKEN="${PAT_TOKEN}" gh pr create`)
+- ✅ Create PR (using `GH_TOKEN="${PAT_TOKEN}" gh pr create` - PR creation via gh CLI works, only issue comments need MCP)
 
 **Requirements:**
 - Fix ONLY the specified vulnerability
@@ -425,10 +427,17 @@ All actions are logged:
 
 **Cause:** Using default `GITHUB_TOKEN` instead of `PAT_TOKEN`.
 
-**Solution:** Ensure `PAT_TOKEN` is configured in Copilot secrets and agent uses:
-```bash
-GH_TOKEN="${PAT_TOKEN}" gh issue comment ...
+**Solution:** Ensure `PAT_TOKEN` is configured in Copilot secrets and agent uses the `add_issue_comment` MCP tool:
 ```
+Call tool: add_issue_comment
+Arguments:
+  owner: "Caoxuyang"
+  repo: "PhotoAlbum-Java"
+  issue_number: [correct issue number from assignment]
+  body: [report content]
+```
+
+**Note:** The `gh issue comment` CLI command does NOT work due to network restrictions. Only the MCP tool works.
 
 #### 2. Copilot Not Assigned to Issue
 

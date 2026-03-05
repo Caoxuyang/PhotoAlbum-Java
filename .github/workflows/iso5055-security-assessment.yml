@@ -86,7 +86,7 @@ jobs:
           **Steps:**
           1. Call tool \`appmod-iso5055-security-assessment\`
           2. Format the results as markdown
-          3. Post the report using: \`gh issue comment ${ISSUE_NUMBER} --body \"<YOUR_REPORT>\"\`
+          3. Post the report using the \`add_issue_comment\` MCP tool with issue_number=${ISSUE_NUMBER}
 
           ⛔ **DO NOT** fix code, create PRs, or close this issue."
 
