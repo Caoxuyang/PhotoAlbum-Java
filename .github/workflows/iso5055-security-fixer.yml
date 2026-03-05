@@ -1,0 +1,226 @@
+name: "ISO5055 Security Fixer (Milestone 2)"
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  process-report:
+    runs-on: ubuntu-latest
+    # Multi-layer validation to prevent false triggers
+    if: |
+      github.event.comment.user.login == 'Copilot' &&
+      github.event.comment.user.type == 'Bot' &&
+      contains(github.event.issue.labels.*.name, 'iso5055') &&
+      contains(github.event.issue.labels.*.name, 'automated') &&
+      contains(github.event.comment.body, '## 📊 ISO 5055 Security Assessment Report') &&
+      contains(github.event.comment.body, '<!-- ASSESSMENT_VERIFIED -->')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate report structure
+        id: validate
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          echo "🔍 Validating report structure..."
+
+          # Check for required sections
+          if ! echo "$COMMENT_BODY" | grep -q "### Summary"; then
+            echo "❌ Invalid report format - missing Summary"
+            exit 1
+          fi
+
+          if ! echo "$COMMENT_BODY" | grep -q "Mandatory"; then
+            echo "❌ Invalid report format - missing Mandatory section"
+            exit 1
+          fi
+
+          echo "✅ Report validated"
+
+      - name: Extract severity filter
+        id: extract-filter
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          # Extract severity filter from report
+          FILTER=$(echo "$COMMENT_BODY" | grep -oP '\*\*Severity Filter:\*\* \K\w+' || echo "MANDATORY")
+          echo "severity_filter=$FILTER" >> $GITHUB_OUTPUT
+          echo "📋 Severity filter: $FILTER"
+
+      - name: Parse findings and create sub-issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          PARENT_ISSUE: ${{ github.event.issue.number }}
+          SEVERITY_FILTER: ${{ steps.extract-filter.outputs.severity_filter }}
+        run: |
+          echo "📊 Processing findings from issue #$PARENT_ISSUE..."
+          echo "🎯 Filtering for: $SEVERITY_FILTER"
+
+          # Save comment to file for parsing
+          echo "$COMMENT_BODY" > /tmp/report.md
+
+          # Create labels for sub-issues
+          gh label create "security-fix" --color "d73a4a" --description "Security fix task" 2>/dev/null || true
+          gh label create "copilot-fix" --color "7057ff" --description "For Copilot to fix" 2>/dev/null || true
+
+          # Parse Mandatory findings section
+          # Extract CWE entries based on severity filter
+          case "$SEVERITY_FILTER" in
+            "MANDATORY")
+              SECTION_PATTERN="### 🔴 Mandatory Findings"
+              ;;
+            "OPTIONAL")
+              SECTION_PATTERN="### 🟠 Optional Findings"
+              ;;
+            "POTENTIAL")
+              SECTION_PATTERN="### 🟡 Potential Findings"
+              ;;
+            "ALL")
+              SECTION_PATTERN="### 🔴\|### 🟠\|### 🟡"
+              ;;
+            *)
+              SECTION_PATTERN="### 🔴 Mandatory Findings"
+              ;;
+          esac
+
+          # Extract CWE IDs and names from the report
+          # Format: #### CWE-XXX: Name
+          grep -E "^#### CWE-[0-9]+:" /tmp/report.md | while read -r line; do
+            CWE_ID=$(echo "$line" | grep -oP 'CWE-\d+')
+            CWE_NAME=$(echo "$line" | sed 's/^#### CWE-[0-9]*: //')
+
+            echo "Found: $CWE_ID - $CWE_NAME"
+
+            # Extract details for this CWE (next few lines after the header)
+            DETAILS=$(grep -A 4 "^#### $CWE_ID:" /tmp/report.md | tail -3)
+            CATEGORY=$(echo "$DETAILS" | grep "Category:" | sed 's/.*Category:\*\* //')
+            EVIDENCE=$(echo "$DETAILS" | grep "Evidence:" | sed 's/.*Evidence:\*\* //')
+
+            # Create sub-issue for this finding
+            SUB_ISSUE_BODY=$(cat <<EOF
+          ## 🔧 Fix Security Vulnerability: $CWE_ID
+
+          **Parent Issue:** #$PARENT_ISSUE
+          **CWE:** $CWE_ID - $CWE_NAME
+          **Category:** $CATEGORY
+
+          ---
+
+          ### Evidence
+
+          $EVIDENCE
+
+          ---
+
+          ### Instructions
+
+          **Agent:** \`security-fixer\`
+
+          Follow the instructions in \`.github/agents/security-fixer.md\`
+
+          **Use the \`appmod-run-task\` tool to fix this vulnerability.**
+
+          Task: Fix $CWE_ID vulnerability as identified in the evidence above.
+
+          ---
+
+          ### Requirements
+
+          1. Fix ONLY this specific vulnerability ($CWE_ID)
+          2. Create a PR with the fix
+          3. Reference this issue in the PR description
+          4. Do NOT fix other issues in the same PR
+          EOF
+          )
+
+            echo "Creating sub-issue for $CWE_ID..."
+            SUB_ISSUE_URL=$(gh issue create \
+              --title "🔧 [$CWE_ID] Fix: $CWE_NAME" \
+              --body "$SUB_ISSUE_BODY" \
+              --label "security-fix,copilot-fix,iso5055")
+
+            SUB_ISSUE_NUMBER=$(echo "$SUB_ISSUE_URL" | grep -oE '[0-9]+$')
+            echo "✅ Created sub-issue #$SUB_ISSUE_NUMBER for $CWE_ID"
+
+            # Store for Copilot assignment
+            echo "$SUB_ISSUE_NUMBER" >> /tmp/sub_issues.txt
+          done
+
+          echo "📋 Sub-issues created. Count: $(wc -l < /tmp/sub_issues.txt 2>/dev/null || echo 0)"
+
+      - name: Assign Copilot to sub-issues
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT_TOKEN }}
+        run: |
+          if [[ ! -f /tmp/sub_issues.txt ]]; then
+            echo "⚠️ No sub-issues to assign"
+            exit 0
+          fi
+
+          while read -r ISSUE_NUMBER; do
+            echo "🤖 Assigning Copilot to issue #$ISSUE_NUMBER..."
+
+            # Get issue node ID for GraphQL
+            ISSUE_NODE_ID=$(gh api repos/${{ github.repository }}/issues/$ISSUE_NUMBER --jq '.node_id')
+
+            # Assign Copilot using GraphQL API
+            if gh api graphql \
+              -H "GraphQL-Features: issues_copilot_assignment_api_support" \
+              -f query='mutation($issueId: ID!) {
+                addAssigneesToAssignable(input: {assignableId: $issueId, assigneeIds: ["BOT_kgDOC9w8XQ"]}) {
+                  clientMutationId
+                }
+              }' \
+              -f issueId="$ISSUE_NODE_ID" 2>/dev/null; then
+              echo "✅ Copilot assigned to issue #$ISSUE_NUMBER"
+            else
+              echo "⚠️ Could not assign Copilot to #$ISSUE_NUMBER"
+            fi
+
+            # Small delay to avoid rate limiting
+            sleep 2
+          done < /tmp/sub_issues.txt
+
+      - name: Post summary to parent issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PARENT_ISSUE: ${{ github.event.issue.number }}
+        run: |
+          if [[ ! -f /tmp/sub_issues.txt ]]; then
+            gh issue comment $PARENT_ISSUE --body "⚠️ No findings matched the severity filter. No sub-issues created."
+            exit 0
+          fi
+
+          SUB_ISSUE_COUNT=$(wc -l < /tmp/sub_issues.txt)
+          SUB_ISSUE_LIST=$(cat /tmp/sub_issues.txt | while read num; do echo "- #$num"; done)
+
+          gh issue comment $PARENT_ISSUE --body "## 🚀 Milestone 2: Security Fixes Initiated
+
+          **Sub-issues created:** $SUB_ISSUE_COUNT
+          **Copilot assigned:** Yes
+
+          ### Sub-issues
+
+          $SUB_ISSUE_LIST
+
+          Each sub-issue has been assigned to Copilot for automated fixing.
+          PRs will be created for each vulnerability fix."
+
+      - name: Summary
+        run: |
+          echo "## 🔧 ISO5055 Security Fixer (Milestone 2)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Report Validated**" >> $GITHUB_STEP_SUMMARY
+          echo "📋 **Parent Issue:** #${{ github.event.issue.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "🎯 **Severity Filter:** ${{ steps.extract-filter.outputs.severity_filter }}" >> $GITHUB_STEP_SUMMARY
+          if [[ -f /tmp/sub_issues.txt ]]; then
+            echo "🔢 **Sub-issues Created:** $(wc -l < /tmp/sub_issues.txt)" >> $GITHUB_STEP_SUMMARY
+          fi

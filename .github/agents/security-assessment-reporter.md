@@ -51,11 +51,15 @@ Wait for the tool to return the JSON report.
 
 Convert the JSON output to this EXACT format:
 
+**CRITICAL: You MUST include the `<!-- ASSESSMENT_VERIFIED -->` marker at the start!**
+
 ```markdown
+<!-- ASSESSMENT_VERIFIED -->
 ## 📊 ISO 5055 Security Assessment Report
 
 **Assessment Date:** [date from report]
 **Repository:** [repository name]
+**Severity Filter:** [MANDATORY/OPTIONAL/POTENTIAL/ALL - from issue body]
 
 ### Summary
 
