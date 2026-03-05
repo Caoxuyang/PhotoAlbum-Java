@@ -425,19 +425,45 @@ All actions are logged:
 
 **Symptom:** Copilot fails to post comment with "HTTP 403" error.
 
-**Cause:** Using default `GITHUB_TOKEN` instead of `PAT_TOKEN`.
+**Cause:** Using default `GITHUB_TOKEN` instead of `PAT_TOKEN`, OR trying to access `api.github.com` directly.
 
-**Solution:** Ensure `PAT_TOKEN` is configured in Copilot secrets and agent uses the `add_issue_comment` MCP tool:
-```
-Call tool: add_issue_comment
-Arguments:
-  owner: "Caoxuyang"
-  repo: "PhotoAlbum-Java"
-  issue_number: [correct issue number from assignment]
-  body: [report content]
+**Solution:** Use the MCP JSON-RPC API with `Bearer ${PAT_TOKEN}`:
+
+1. Endpoint: `https://api.enterprise.githubcopilot.com/mcp` (NOT `api.github.com`)
+2. Authorization: `Bearer ${PAT_TOKEN}` (PAT_TOKEN configured in Copilot Coding Agent secrets)
+3. Protocol: JSON-RPC 2.0 with session management
+4. Tool: `add_issue_comment` via `tools/call` method
+
+**What DOES NOT work:**
+- `gh issue comment` → TIMEOUT (network blocked)
+- `gh api` → TIMEOUT (network blocked)
+- `curl api.github.com` → 403 FORBIDDEN (blocked by DNS proxy)
+- `Authorization: token ${PAT_TOKEN}` to api.github.com → 403
+
+**What WORKS (verified):**
+```bash
+# Initialize MCP session
+curl -D "${TMPFILE}" --max-time 10 \
+  -X POST \
+  -H "Authorization: Bearer ${PAT_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  "https://api.enterprise.githubcopilot.com/mcp" \
+  -d '{"jsonrpc":"2.0","id":0,"method":"initialize",...}'
+
+# Extract session ID from response headers
+SESSION_ID=$(grep -i "Mcp-Session-Id:" "${TMPFILE}" | sed 's/.*Mcp-Session-Id: //' | tr -d '\r\n ')
+
+# Post comment via tools/call
+curl -s -w "\nHTTP_STATUS:%{http_code}" --max-time 30 \
+  -X POST \
+  -H "Authorization: Bearer ${PAT_TOKEN}" \
+  -H "Mcp-Session-Id: ${SESSION_ID}" \
+  "https://api.enterprise.githubcopilot.com/mcp" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"add_issue_comment",...}}'
 ```
 
-**Note:** The `gh issue comment` CLI command does NOT work due to network restrictions. Only the MCP tool works.
+See `.github/agents/security-assessment-reporter.md` for complete implementation.
 
 #### 2. Copilot Not Assigned to Issue
 
