@@ -27,28 +27,73 @@ Read the issue body carefully. Extract:
 - **Evidence**: File path and line number where the vulnerability exists
 - **Description**: What the vulnerability is
 
-### Step 2: Call appmod-run-task Tool
+### Step 2: 🔍 SCAN FOR ALL OCCURRENCES (CRITICAL!)
 
-Use the `appmod-run-task` tool with a clear task description:
+**⚠️ IMPORTANT:** The assessment report only shows ONE example per CWE due to context limits. There may be MULTIPLE occurrences of the same vulnerability pattern throughout the codebase.
+
+**Before fixing, you MUST scan the entire repository for ALL occurrences of this CWE pattern.**
+
+For each CWE type, search for its characteristic patterns:
+
+| CWE | Search Patterns |
+|-----|-----------------|
+| CWE-89 (SQL Injection) | String concatenation in SQL queries, `"SELECT.*" +`, `.execute(.*+` |
+| CWE-79 (XSS) | Unescaped output, `innerHTML`, `document.write`, raw template variables |
+| CWE-434 (Unrestricted Upload) | `getContentType()`, `file.getOriginalFilename()`, upload handlers without validation |
+| CWE-259/798 (Hardcoded Credentials) | `password=`, `secret=`, `apikey=`, `credentials` in config files |
+| CWE-22 (Path Traversal) | User input in file paths, `new File(userInput)`, path concatenation |
+| CWE-778 (Insufficient Logging) | Security operations without audit logs, missing identity in logs |
+
+**Search commands to use:**
+
+```bash
+# Search for patterns in Java files
+grep -rn "PATTERN" --include="*.java" src/
+
+# Search in config files
+grep -rn "PATTERN" --include="*.properties" --include="*.yml" --include="*.yaml" .
+
+# Search all relevant files
+find . -type f \( -name "*.java" -o -name "*.properties" \) -exec grep -l "PATTERN" {} \;
+```
+
+**Document ALL locations found before proceeding to fix.**
+
+### Step 3: Call appmod-run-task Tool
+
+Use the `appmod-run-task` tool with a clear task description that includes ALL locations:
 
 ```
 Call tool: appmod-run-task
 
-Task: Fix [CWE-ID] vulnerability in [file:line].
-[Include the evidence and description from the issue]
+Task: Fix [CWE-ID] vulnerability.
+
+Locations found:
+1. [file1:line] - [brief description]
+2. [file2:line] - [brief description]
+3. [file3:line] - [brief description]
+
+[Include the CWE description and fix requirements]
 ```
 
 Wait for the tool to provide fix guidance or apply the fix.
 
-### Step 3: Implement the Fix
+### Step 4: Implement the Fix for ALL Occurrences
 
 Based on the tool's guidance:
-1. Make the necessary code changes
-2. Ensure the fix addresses the specific vulnerability
-3. Do NOT change unrelated code
-4. Follow existing code style and patterns
+1. **Fix ALL locations** identified in Step 2 - not just the one from the report
+2. Apply a consistent fix pattern across all occurrences
+3. Ensure the fix addresses the specific vulnerability
+4. Do NOT change unrelated code
+5. Follow existing code style and patterns
 
-### Step 4: Create Pull Request
+**Verification checklist before committing:**
+- [ ] All occurrences from Step 2 have been fixed
+- [ ] Re-run the search from Step 2 to confirm no remaining vulnerable patterns
+- [ ] Code compiles without errors
+- [ ] Existing tests still pass
+
+### Step 5: Create Pull Request
 
 🔑 **AUTHENTICATION: You MUST use PAT_TOKEN for git and gh operations!**
 
@@ -124,14 +169,23 @@ Create a PR with:
 ## 🔒 Security Fix: [CWE-ID]
 
 ### Summary
-Fixed [vulnerability name] in `[file path]`.
+Fixed [vulnerability name] across [N] location(s).
+
+### Locations Fixed
+- `[file1:line]` - [what was fixed]
+- `[file2:line]` - [what was fixed]
+- ...
 
 ### Changes
-- [Describe what was changed]
+- [Describe the fix pattern applied]
 - [Describe how the vulnerability was addressed]
 
-### Testing
-- [How the fix was verified]
+### Verification
+- [ ] Scanned codebase for all occurrences
+- [ ] All [N] locations fixed
+- [ ] Re-scanned to confirm no remaining vulnerable patterns
+- [ ] Code compiles
+- [ ] Tests pass
 
 ### References
 - Fixes #[ISSUE_NUMBER]
