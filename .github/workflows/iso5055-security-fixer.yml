@@ -79,29 +79,54 @@ jobs:
           gh label create "security-fix" --color "d73a4a" --description "Security fix task" 2>/dev/null || true
           gh label create "copilot-fix" --color "7057ff" --description "For Copilot to fix" 2>/dev/null || true
 
-          # Parse Mandatory findings section
-          # Extract CWE entries based on severity filter
+          # Since M1 now filters the report based on severity, we process ALL CWEs in the report
+          # The severity filter was already applied by the reporter agent
+          # This means every CWE in the report should get a sub-issue
+
+          # However, we can still verify by extracting CWEs only from the appropriate sections
+          # Build list of sections to include based on filter
           case "$SEVERITY_FILTER" in
             "MANDATORY")
-              SECTION_PATTERN="### 🔴 Mandatory Findings"
+              # Only process CWEs under Mandatory section
+              SECTIONS="Mandatory"
               ;;
             "OPTIONAL")
-              SECTION_PATTERN="### 🟠 Optional Findings"
+              # Process Mandatory + Optional
+              SECTIONS="Mandatory|Optional"
               ;;
             "POTENTIAL")
-              SECTION_PATTERN="### 🟡 Potential Findings"
+              # Process Mandatory + Optional + Potential
+              SECTIONS="Mandatory|Optional|Potential"
               ;;
-            "ALL")
-              SECTION_PATTERN="### 🔴\|### 🟠\|### 🟡"
-              ;;
-            *)
-              SECTION_PATTERN="### 🔴 Mandatory Findings"
+            "ALL"|*)
+              # Process all sections
+              SECTIONS="Mandatory|Optional|Potential|Information"
               ;;
           esac
 
-          # Extract CWE IDs and names from the report
-          # Format: #### CWE-XXX: Name
-          grep -E "^#### CWE-[0-9]+:" /tmp/report.md | while read -r line; do
+          echo "📋 Processing sections matching: $SECTIONS"
+
+          # Use awk to extract CWEs only from matching sections
+          # This is more robust than simple grep
+          awk -v sections="$SECTIONS" '
+            BEGIN { in_section = 0 }
+            /^### .*(Mandatory|Optional|Potential|Information) Findings/ {
+              in_section = 0
+              if (match($0, sections)) {
+                in_section = 1
+                print "SECTION: " $0 > "/dev/stderr"
+              }
+            }
+            /^#### CWE-[0-9]+:/ && in_section {
+              print $0
+            }
+          ' /tmp/report.md > /tmp/cwe_entries.txt
+
+          echo "Found $(wc -l < /tmp/cwe_entries.txt) CWE entries to process"
+
+          # Process each CWE entry
+          while read -r line; do
+            [[ -z "$line" ]] && continue
             CWE_ID=$(echo "$line" | grep -oP 'CWE-\d+')
             CWE_NAME=$(echo "$line" | sed 's/^#### CWE-[0-9]*: //')
 
@@ -160,7 +185,7 @@ jobs:
 
             # Store for Copilot assignment
             echo "$SUB_ISSUE_NUMBER" >> /tmp/sub_issues.txt
-          done
+          done < /tmp/cwe_entries.txt
 
           echo "📋 Sub-issues created. Count: $(wc -l < /tmp/sub_issues.txt 2>/dev/null || echo 0)"
 

@@ -113,14 +113,18 @@ curl -s -w "\nHTTP_STATUS:%{http_code}" --max-time 30 \
 
 ## EXACT STEPS TO FOLLOW
 
-### Step 1: Get the Correct Issue Number
+### Step 1: Get the Issue Number AND Severity Filter
 
-Read the issue body. Look for:
-```
-**Issue Number:** #XX
-```
+Read the issue body. Extract TWO pieces of information:
 
-Extract `XX` as your target issue number (as an integer).
+1. **Issue Number:** Look for `**Issue Number:** #XX` → Extract `XX` as integer
+2. **Severity Filter:** Look for `**Severity Filter:** XXXXX` → Extract the filter value
+
+**Severity Filter Values (hierarchical):**
+- `MANDATORY` → Include ONLY 🔴 Mandatory findings
+- `OPTIONAL` → Include 🔴 Mandatory AND 🟠 Optional findings
+- `POTENTIAL` → Include 🔴 Mandatory, 🟠 Optional, AND 🟡 Potential findings
+- `ALL` → Include all findings (Mandatory + Optional + Potential + Information)
 
 ### Step 2: Call the Assessment Tool
 
@@ -128,7 +132,14 @@ Extract `XX` as your target issue number (as an integer).
 Call tool: appmod-iso5055-security-assessment
 ```
 
-### Step 3: Format as Markdown
+### Step 3: Filter and Format as Markdown
+
+**CRITICAL:** Only include findings that match the severity filter!
+
+- If filter is `MANDATORY`: Only include `### 🔴 Mandatory Findings` section
+- If filter is `OPTIONAL`: Include `### 🔴 Mandatory Findings` AND `### 🟠 Optional Findings`
+- If filter is `POTENTIAL`: Include Mandatory, Optional, AND `### 🟡 Potential Findings`
+- If filter is `ALL`: Include all severity sections
 
 Include `<!-- ASSESSMENT_VERIFIED -->` at the start:
 
@@ -138,17 +149,17 @@ Include `<!-- ASSESSMENT_VERIFIED -->` at the start:
 
 **Assessment Date:** [date]
 **Repository:** Caoxuyang/PhotoAlbum-Java
-**Severity Filter:** [from issue body]
+**Severity Filter:** [EXACTLY as extracted from issue body]
 
-### Summary
+### 📋 Executive Summary
 
 | Severity | Count |
 |----------|-------|
 | 🔴 Mandatory | [count] |
-| 🟠 Optional | [count] |
-| 🟡 Potential | [count] |
-| 🔵 Information | [count] |
-| **Total** | [total] |
+| 🟠 Optional | [count - or "N/A (filtered)" if not included] |
+| 🟡 Potential | [count - or "N/A (filtered)" if not included] |
+| 🔵 Information | [count - or "N/A (filtered)" if not included] |
+| **Actionable Findings** | [total matching filter] |
 
 ---
 
@@ -159,8 +170,10 @@ Include `<!-- ASSESSMENT_VERIFIED -->` at the start:
 - **Description:** [description]
 - **Evidence:** `[file:line]` — [evidence]
 
-[... repeat for each finding ...]
+[... only include sections matching the severity filter ...]
 ```
+
+**IMPORTANT:** The `**Severity Filter:**` line in the report MUST exactly match the filter from the issue body. This is used by Milestone 2 to determine which findings to create sub-issues for.
 
 ### Step 4: Post Using MCP JSON-RPC
 
