@@ -31,14 +31,22 @@ jobs:
         run: |
           echo "🔍 Validating report structure..."
 
-          # Check for required sections
-          if ! echo "$COMMENT_BODY" | grep -q "### Summary"; then
-            echo "❌ Invalid report format - missing Summary"
+          # Check for required sections (flexible matching)
+          # Report uses "### 📋 Executive Summary" not "### Summary"
+          if ! echo "$COMMENT_BODY" | grep -q "Summary"; then
+            echo "❌ Invalid report format - missing Summary section"
             exit 1
           fi
 
-          if ! echo "$COMMENT_BODY" | grep -q "Mandatory"; then
-            echo "❌ Invalid report format - missing Mandatory section"
+          # Check for findings section (any severity level)
+          if ! echo "$COMMENT_BODY" | grep -qE "Mandatory|Optional|Potential"; then
+            echo "❌ Invalid report format - missing findings section"
+            exit 1
+          fi
+
+          # Check for CWE entries
+          if ! echo "$COMMENT_BODY" | grep -q "CWE-"; then
+            echo "❌ Invalid report format - no CWE findings found"
             exit 1
           fi
 
