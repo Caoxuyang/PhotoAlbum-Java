@@ -12,9 +12,9 @@ jobs:
   process-report:
     runs-on: ubuntu-latest
     # Multi-layer validation to prevent false triggers
+    # NOTE: Comments are posted via MCP using PAT_TOKEN, so author is the PAT owner (not Copilot bot)
+    # We validate using: issue labels + report content markers instead of comment author
     if: |
-      github.event.comment.user.login == 'Copilot' &&
-      github.event.comment.user.type == 'Bot' &&
       contains(github.event.issue.labels.*.name, 'iso5055') &&
       contains(github.event.issue.labels.*.name, 'automated') &&
       contains(github.event.comment.body, '## 📊 ISO 5055 Security Assessment Report') &&

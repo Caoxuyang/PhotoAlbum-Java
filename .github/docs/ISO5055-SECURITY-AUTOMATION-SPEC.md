@@ -242,8 +242,6 @@ The workflow only triggers when ALL conditions are met:
 
 ```yaml
 if: |
-  github.event.comment.user.login == 'Copilot' &&
-  github.event.comment.user.type == 'Bot' &&
   contains(github.event.issue.labels.*.name, 'iso5055') &&
   contains(github.event.issue.labels.*.name, 'automated') &&
   contains(github.event.comment.body, '## 📊 ISO 5055 Security Assessment Report') &&
@@ -252,11 +250,12 @@ if: |
 
 | Check | Purpose |
 |-------|---------|
-| `user.login == 'Copilot'` | Ensures comment is from Copilot |
-| `user.type == 'Bot'` | Confirms bot account type |
 | `labels contains 'iso5055'` | Issue is part of ISO 5055 workflow |
 | `labels contains 'automated'` | Issue was auto-generated |
 | `body contains report header` | Valid report format |
+| `body contains verified marker` | Report was properly generated |
+
+> **Note:** We validate using issue labels and report content markers instead of comment author, because the MCP API posts comments using PAT_TOKEN (comment author is the PAT owner, not Copilot bot).
 | `body contains verified marker` | Report was properly generated |
 
 ### Process Flow
