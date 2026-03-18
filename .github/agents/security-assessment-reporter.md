@@ -170,14 +170,33 @@ Parameters: domain="Java Upgrade"
 
 ### Step 3: Filter and Format as Markdown
 
-**CRITICAL:** Only include findings that match the severity filter!
+**🚨 CRITICAL - FILTERING IS MANDATORY 🚨**
 
-- If filter is `MANDATORY`: Only include `### 🔴 Mandatory Findings` section
-- If filter is `OPTIONAL`: Include `### 🔴 Mandatory Findings` AND `### 🟠 Optional Findings`
-- If filter is `POTENTIAL`: Include Mandatory, Optional, AND `### 🟡 Potential Findings`
-- If filter is `ALL`: Include all severity sections
+You MUST filter findings by severity! DO NOT include findings below the specified severity level!
 
-**For multiple domains:** Create separate sections for each domain's findings.
+**Severity Filter Rules (STRICTLY ENFORCED):**
+
+- If filter is `MANDATORY`:
+  - ✅ ONLY include `### 🔴 Mandatory Findings` section
+  - ❌ DO NOT include Optional, Potential, or Information sections
+
+- If filter is `OPTIONAL`:
+  - ✅ Include `### 🔴 Mandatory Findings` AND `### 🟠 Optional Findings`
+  - ❌ DO NOT include Potential or Information sections
+
+- If filter is `POTENTIAL`:
+  - ✅ Include `### 🔴 Mandatory`, `### 🟠 Optional`, AND `### 🟡 Potential Findings`
+  - ❌ DO NOT include Information section
+
+- If filter is `ALL`:
+  - ✅ Include all severity sections (Mandatory, Optional, Potential, Information)
+
+**Executive Summary Table:**
+- Show actual counts for included severity levels
+- Show "N/A (filtered out)" for excluded severity levels
+- **Total Actionable** should ONLY count findings that were actually included in the report
+
+**For multiple domains:** Create separate sections for each domain's findings, applying the same severity filter to both.
 
 Include `<!-- ASSESSMENT_VERIFIED -->` at the start:
 

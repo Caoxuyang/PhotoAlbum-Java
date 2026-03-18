@@ -13,7 +13,7 @@ on:
           - 'Language Version'
           - 'Security + Language Version'
       severity_filter:
-        description: 'Severity level to fix (for Milestone 2)'
+        description: 'Only report and fix issues at this severity level or higher'
         required: true
         default: 'mandatory'
         type: choice
@@ -126,7 +126,7 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## 📋 ISO5055 Assessment" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Evergreen Assessment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ **Issue Created:** #${{ steps.create-issue.outputs.issue_number }}" >> $GITHUB_STEP_SUMMARY
           echo "🔗 **URL:** ${{ steps.create-issue.outputs.issue_url }}" >> $GITHUB_STEP_SUMMARY
