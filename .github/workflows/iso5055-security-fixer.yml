@@ -17,7 +17,7 @@ jobs:
     if: |
       contains(github.event.issue.labels.*.name, 'iso5055') &&
       contains(github.event.issue.labels.*.name, 'automated') &&
-      contains(github.event.comment.body, '## 📊 ISO 5055 Assessment Report') &&
+      (contains(github.event.comment.body, '## 📊 ISO 5055 Assessment Report') || contains(github.event.comment.body, '## 📊 ISO 5055 Security Assessment Report')) &&
       contains(github.event.comment.body, '<!-- ASSESSMENT_VERIFIED -->')
 
     steps:
