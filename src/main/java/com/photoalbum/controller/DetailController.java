@@ -2,6 +2,7 @@ package com.photoalbum.controller;
 
 import com.photoalbum.model.Photo;
 import com.photoalbum.service.PhotoService;
+import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -62,19 +63,43 @@ public class DetailController {
      * Handles POST requests to delete a photo
      */
     @PostMapping("/{id}/delete")
-    public String deletePhoto(@PathVariable String id, RedirectAttributes redirectAttributes) {
+    public String deletePhoto(@PathVariable String id, RedirectAttributes redirectAttributes,
+                              HttpServletRequest request) {
+        String remoteIp = getClientIp(request);
+        String userAgent = request.getHeader("User-Agent");
         try {
             boolean deleted = photoService.deletePhoto(id);
             if (deleted) {
-                logger.info("Photo {} deleted successfully", id);
+                logger.info("Photo {} deleted successfully [ip={}, userAgent={}]", id, remoteIp, userAgent);
                 redirectAttributes.addFlashAttribute("successMessage", "Photo deleted successfully");
             } else {
+                logger.warn("Delete requested for non-existent photo {} [ip={}, userAgent={}]", id, remoteIp, userAgent);
                 redirectAttributes.addFlashAttribute("errorMessage", "Photo not found");
             }
         } catch (Exception ex) {
-            logger.error("Error deleting photo {}", id, ex);
+            logger.error("Error deleting photo {} [ip={}, userAgent={}]", id, remoteIp, userAgent, ex);
             redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete photo. Please try again.");
         }
         return "redirect:/";
+    }
+
+    /**
+     * Returns the real client IP address, taking into account reverse-proxy headers.
+     * Note: X-Forwarded-For and X-Real-IP headers may be spoofed; in production
+     * deployments, restrict access to these headers to trusted proxies only.
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        // X-Forwarded-For may contain a comma-separated list; take the first value
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        return ip != null ? ip : "unknown";
     }
 }
