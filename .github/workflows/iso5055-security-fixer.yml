@@ -17,7 +17,7 @@ jobs:
     if: |
       contains(github.event.issue.labels.*.name, 'iso5055') &&
       contains(github.event.issue.labels.*.name, 'automated') &&
-      contains(github.event.comment.body, '## 📊 ISO 5055 Security Assessment Report') &&
+      contains(github.event.comment.body, '## 📊 ISO 5055 Assessment Report') &&
       contains(github.event.comment.body, '<!-- ASSESSMENT_VERIFIED -->')
 
     steps:
@@ -44,15 +44,15 @@ jobs:
             exit 1
           fi
 
-          # Check for CWE entries
-          if ! echo "$COMMENT_BODY" | grep -q "CWE-"; then
-            echo "❌ Invalid report format - no CWE findings found"
+          # Check for either CWE entries (security) OR finding IDs (language version)
+          if ! echo "$COMMENT_BODY" | grep -qE "CWE-|####.*:"; then
+            echo "❌ Invalid report format - no findings found"
             exit 1
           fi
 
           echo "✅ Report validated"
 
-      - name: Extract severity filter
+      - name: Extract severity filter and domains
         id: extract-filter
         env:
           COMMENT_BODY: ${{ github.event.comment.body }}
@@ -62,52 +62,50 @@ jobs:
           echo "severity_filter=$FILTER" >> $GITHUB_OUTPUT
           echo "📋 Severity filter: $FILTER"
 
+          # Extract assessment domains from report
+          DOMAINS=$(echo "$COMMENT_BODY" | grep -oP '\*\*Assessment Domains:\*\* \K.*' || echo "Security")
+          echo "domains=$DOMAINS" >> $GITHUB_OUTPUT
+          echo "📊 Assessment domains: $DOMAINS"
+
       - name: Parse findings and create sub-issues
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           PARENT_ISSUE: ${{ github.event.issue.number }}
           SEVERITY_FILTER: ${{ steps.extract-filter.outputs.severity_filter }}
+          DOMAINS: ${{ steps.extract-filter.outputs.domains }}
         run: |
           echo "📊 Processing findings from issue #$PARENT_ISSUE..."
           echo "🎯 Filtering for: $SEVERITY_FILTER"
+          echo "📋 Domains: $DOMAINS"
 
           # Save comment to file for parsing
           echo "$COMMENT_BODY" > /tmp/report.md
 
           # Create labels for sub-issues
           gh label create "security-fix" --color "d73a4a" --description "Security fix task" 2>/dev/null || true
+          gh label create "language-upgrade" --color "0e8a16" --description "Language version upgrade task" 2>/dev/null || true
           gh label create "copilot-fix" --color "7057ff" --description "For Copilot to fix" 2>/dev/null || true
 
-          # Since M1 now filters the report based on severity, we process ALL CWEs in the report
-          # The severity filter was already applied by the reporter agent
-          # This means every CWE in the report should get a sub-issue
-
-          # However, we can still verify by extracting CWEs only from the appropriate sections
           # Build list of sections to include based on filter
           case "$SEVERITY_FILTER" in
             "MANDATORY")
-              # Only process CWEs under Mandatory section
               SECTIONS="Mandatory"
               ;;
             "OPTIONAL")
-              # Process Mandatory + Optional
               SECTIONS="Mandatory|Optional"
               ;;
             "POTENTIAL")
-              # Process Mandatory + Optional + Potential
               SECTIONS="Mandatory|Optional|Potential"
               ;;
             "ALL"|*)
-              # Process all sections
               SECTIONS="Mandatory|Optional|Potential|Information"
               ;;
           esac
 
           echo "📋 Processing sections matching: $SECTIONS"
 
-          # Use awk to extract CWEs only from matching sections
-          # This is more robust than simple grep
+          # Extract all findings (both CWE and non-CWE) from matching sections
           awk -v sections="$SECTIONS" '
             BEGIN { in_section = 0 }
             /^### .*(Mandatory|Optional|Potential|Information) Findings/ {
@@ -117,32 +115,50 @@ jobs:
                 print "SECTION: " $0 > "/dev/stderr"
               }
             }
-            /^#### CWE-[0-9]+:/ && in_section {
+            /^#### .*:/ && in_section {
               print $0
             }
-          ' /tmp/report.md > /tmp/cwe_entries.txt
+          ' /tmp/report.md > /tmp/finding_entries.txt
 
-          echo "Found $(wc -l < /tmp/cwe_entries.txt) CWE entries to process"
+          echo "Found $(wc -l < /tmp/finding_entries.txt) finding entries to process"
 
-          # Process each CWE entry
+          # Process each finding entry
           while read -r line; do
             [[ -z "$line" ]] && continue
-            CWE_ID=$(echo "$line" | grep -oP 'CWE-\d+')
-            CWE_NAME=$(echo "$line" | sed 's/^#### CWE-[0-9]*: //')
 
-            echo "Found: $CWE_ID - $CWE_NAME"
+            # Check if this is a CWE (Security) or other finding (Language Version)
+            if echo "$line" | grep -q "^#### CWE-"; then
+              # Security finding
+              FINDING_ID=$(echo "$line" | grep -oP 'CWE-\d+')
+              FINDING_NAME=$(echo "$line" | sed 's/^#### CWE-[0-9]*: //')
+              FINDING_TYPE="Security"
+              ISSUE_EMOJI="🔒"
+              LABELS="security-fix,copilot-fix,iso5055"
 
-            # Extract details for this CWE (next few lines after the header)
-            DETAILS=$(grep -A 4 "^#### $CWE_ID:" /tmp/report.md | tail -3)
+              echo "Found Security: $FINDING_ID - $FINDING_NAME"
+            else
+              # Language version finding
+              FINDING_ID=$(echo "$line" | grep -oP '^#### \K[^:]+')
+              FINDING_NAME=$(echo "$line" | sed 's/^#### [^:]*: //')
+              FINDING_TYPE="Language Version"
+              ISSUE_EMOJI="⬆️"
+              LABELS="language-upgrade,copilot-fix,iso5055"
+
+              echo "Found Language Version: $FINDING_ID - $FINDING_NAME"
+            fi
+
+            # Extract details for this finding (next few lines after the header)
+            DETAILS=$(grep -A 4 "^#### $FINDING_ID:" /tmp/report.md | tail -3)
             CATEGORY=$(echo "$DETAILS" | grep "Category:" | sed 's/.*Category:\*\* //')
             EVIDENCE=$(echo "$DETAILS" | grep "Evidence:" | sed 's/.*Evidence:\*\* //')
 
             # Create sub-issue for this finding
-            SUB_ISSUE_BODY=$(cat <<EOF
-          ## 🔧 Fix Security Vulnerability: $CWE_ID
+            if [ "$FINDING_TYPE" = "Security" ]; then
+              SUB_ISSUE_BODY=$(cat <<EOF
+          ## 🔧 Fix Security Vulnerability: $FINDING_ID
 
           **Parent Issue:** #$PARENT_ISSUE
-          **CWE:** $CWE_ID - $CWE_NAME
+          **CWE:** $FINDING_ID - $FINDING_NAME
           **Category:** $CATEGORY
 
           ---
@@ -161,31 +177,72 @@ jobs:
 
           **Use the \`appmod-run-task\` tool to fix this vulnerability.**
 
-          Task: Fix $CWE_ID vulnerability as identified in the evidence above.
+          Task: Fix $FINDING_ID vulnerability as identified in the evidence above.
 
           ---
 
           ### Requirements
 
-          1. Fix ONLY this specific vulnerability ($CWE_ID)
+          1. Fix ONLY this specific vulnerability ($FINDING_ID)
           2. Create a PR with the fix
           3. Reference this issue in the PR description
           4. Do NOT fix other issues in the same PR
           EOF
-          )
+              )
 
-            echo "Creating sub-issue for $CWE_ID..."
+              SUB_ISSUE_TITLE="🔒 [$FINDING_ID] Fix: $FINDING_NAME"
+            else
+              SUB_ISSUE_BODY=$(cat <<EOF
+          ## 🔧 Language Version Upgrade: $FINDING_ID
+
+          **Parent Issue:** #$PARENT_ISSUE
+          **Finding:** $FINDING_ID - $FINDING_NAME
+          **Category:** $CATEGORY
+
+          ---
+
+          ### Evidence
+
+          $EVIDENCE
+
+          ---
+
+          ### Instructions
+
+          **Agent:** \`security-fixer\`
+
+          Follow the instructions in \`.github/agents/security-fixer.md\`
+
+          **Use the \`appmod-run-task\` tool to upgrade this code.**
+
+          Task: Upgrade this project to the latest Java version
+
+          ---
+
+          ### Requirements
+
+          1. Fix ONLY this specific finding ($FINDING_ID)
+          2. Create a PR with the fix
+          3. Reference this issue in the PR description
+          4. Do NOT fix other issues in the same PR
+          EOF
+              )
+
+              SUB_ISSUE_TITLE="⬆️ [$FINDING_ID] Upgrade: $FINDING_NAME"
+            fi
+
+            echo "Creating sub-issue for $FINDING_ID..."
             SUB_ISSUE_URL=$(gh issue create \
-              --title "🔧 [$CWE_ID] Fix: $CWE_NAME" \
+              --title "$SUB_ISSUE_TITLE" \
               --body "$SUB_ISSUE_BODY" \
-              --label "security-fix,copilot-fix,iso5055")
+              --label "$LABELS")
 
             SUB_ISSUE_NUMBER=$(echo "$SUB_ISSUE_URL" | grep -oE '[0-9]+$')
-            echo "✅ Created sub-issue #$SUB_ISSUE_NUMBER for $CWE_ID"
+            echo "✅ Created sub-issue #$SUB_ISSUE_NUMBER for $FINDING_ID"
 
             # Store for Copilot assignment
             echo "$SUB_ISSUE_NUMBER" >> /tmp/sub_issues.txt
-          done < /tmp/cwe_entries.txt
+          done < /tmp/finding_entries.txt
 
           echo "📋 Sub-issues created. Count: $(wc -l < /tmp/sub_issues.txt 2>/dev/null || echo 0)"
 
