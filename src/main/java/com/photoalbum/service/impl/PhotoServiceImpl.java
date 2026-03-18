@@ -136,6 +136,14 @@ public class PhotoServiceImpl implements PhotoService {
                 // Continue without dimensions - not critical
             }
 
+            // Ensure photoData was successfully read before proceeding
+            if (photoData == null) {
+                logger.error("File data is null after read attempt for {}", file.getOriginalFilename());
+                result.setSuccess(false);
+                result.setErrorMessage("Error reading file data. Please try again.");
+                return result;
+            }
+
             // Create photo entity with database BLOB storage
             Photo photo = new Photo(
                 file.getOriginalFilename(),
