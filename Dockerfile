@@ -10,6 +10,9 @@ RUN mvn dependency:go-offline -B
 # Copy source code
 COPY src ./src
 
+# Restrict permissions on application.properties (CWE-732: sensitive credentials)
+RUN chmod 600 src/main/resources/application.properties
+
 # Build the application
 RUN mvn clean package -DskipTests
 
