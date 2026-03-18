@@ -1,4 +1,4 @@
-name: "ISO5055 Security Fixer (Milestone 2)"
+name: "Evergreen Remediator"
 
 on:
   issue_comment:
