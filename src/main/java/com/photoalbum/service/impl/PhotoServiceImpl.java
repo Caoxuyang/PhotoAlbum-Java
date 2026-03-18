@@ -117,7 +117,16 @@ public class PhotoServiceImpl implements PhotoService {
             try {
                 // Read file content for database storage
                 photoData = file.getBytes();
-                
+
+                // Validate actual file content via magic bytes (prevents spoofed Content-Type)
+                if (!isValidImageContent(photoData, file.getContentType())) {
+                    result.setSuccess(false);
+                    result.setErrorMessage("File content does not match the declared image type. Upload rejected.");
+                    logger.warn("Upload rejected: magic bytes do not match declared type {} for {}",
+                        file.getContentType(), file.getOriginalFilename());
+                    return result;
+                }
+
                 // Extract image dimensions from byte array
                 try (ByteArrayInputStream bis = new ByteArrayInputStream(photoData)) {
                     BufferedImage image = ImageIO.read(bis);
@@ -225,5 +234,54 @@ public class PhotoServiceImpl implements PhotoService {
         }
         int lastDotIndex = filename.lastIndexOf('.');
         return lastDotIndex > 0 ? filename.substring(lastDotIndex) : "";
+    }
+
+    /**
+     * Validate file content via magic bytes to prevent spoofed Content-Type uploads (CWE-434).
+     * The Content-Type HTTP header is client-supplied and cannot be trusted alone.
+     */
+    public boolean isValidImageContent(byte[] data, String mimeType) {
+        if (data == null || data.length < 4 || mimeType == null) {
+            return false;
+        }
+        String normalizedMime = mimeType.toLowerCase();
+        if ("image/jpeg".equals(normalizedMime)) {
+            // JPEG magic bytes: FF D8 FF
+            return data[0] == (byte) 0xFF
+                && data[1] == (byte) 0xD8
+                && data[2] == (byte) 0xFF;
+        } else if ("image/png".equals(normalizedMime)) {
+            // PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
+            return data.length >= 8
+                && data[0] == (byte) 0x89
+                && data[1] == (byte) 0x50  // P
+                && data[2] == (byte) 0x4E  // N
+                && data[3] == (byte) 0x47  // G
+                && data[4] == (byte) 0x0D
+                && data[5] == (byte) 0x0A
+                && data[6] == (byte) 0x1A
+                && data[7] == (byte) 0x0A;
+        } else if ("image/gif".equals(normalizedMime)) {
+            // GIF magic bytes: GIF87a or GIF89a
+            return data.length >= 6
+                && data[0] == (byte) 0x47  // G
+                && data[1] == (byte) 0x49  // I
+                && data[2] == (byte) 0x46  // F
+                && data[3] == (byte) 0x38  // 8
+                && (data[4] == (byte) 0x37 || data[4] == (byte) 0x39)  // 7 or 9
+                && data[5] == (byte) 0x61; // a
+        } else if ("image/webp".equals(normalizedMime)) {
+            // WebP magic bytes: RIFF at offset 0 and WEBP at offset 8
+            return data.length >= 12
+                && data[0] == (byte) 0x52  // R
+                && data[1] == (byte) 0x49  // I
+                && data[2] == (byte) 0x46  // F
+                && data[3] == (byte) 0x46  // F
+                && data[8] == (byte) 0x57  // W
+                && data[9] == (byte) 0x45  // E
+                && data[10] == (byte) 0x42 // B
+                && data[11] == (byte) 0x50; // P
+        }
+        return false;
     }
 }
