@@ -170,27 +170,45 @@ jobs:
           ${JAKARTA_SECTION}
           ---
 
-          ### Instructions
+          ### 🤖 Instructions for Copilot
 
-          **Agent:** \`security-fixer\`
+          You are a language version upgrade agent. Your task is to perform this **interdependent full-stack upgrade** using the \`appmod-run-task\` MCP tool.
 
-          Follow the instructions in \`.github/agents/security-fixer.md\`
+          ⚠️ **CRITICAL:** These upgrades are interdependent. Spring Boot 3.x requires Java 17+ and jakarta.* namespaces. All changes MUST be in ONE PR.
 
-          **Use the \`appmod-run-task\` tool to perform the full upgrade.**
+          #### Step 1: Use the appmod-run-task Tool
 
-          Task: Upgrade project from Java 8 + Spring Boot 2.7.18 to Java 21 + Spring Boot 3.4.x with jakarta.* namespace migration
+          Call the \`appmod-run-task\` tool with this task description:
 
-          ---
+          \`\`\`
+          Upgrade project from Java 8 + Spring Boot 2.7.18 to Java 21 + Spring Boot 3.4.x with jakarta.* namespace migration
 
-          ### Requirements
+          Evidence:
+          - Java version: $JAVA_EVIDENCE
+          - Spring Boot version: $SPRING_EVIDENCE
 
-          1. **Single PR** with all three changes:
-             - Java version in pom.xml (1.8 → 21)
-             - Spring Boot parent version (2.7.18 → 3.4.x)
-             - Namespace migration (javax.* → jakarta.*)
-          2. Verify build passes after all changes
-          3. Verify tests pass after all changes
-          4. Reference this issue in the PR description
+          This is a full-stack upgrade. You MUST:
+          1. Upgrade Java version in pom.xml from 1.8 to 21
+          2. Upgrade Spring Boot parent version from 2.7.18 to 3.4.x (latest stable)
+          3. Migrate ALL javax.* imports to jakarta.* namespaces (required for Spring Boot 3.x)
+
+          Scan the entire codebase for ALL occurrences that need upgrading.
+          \`\`\`
+
+          #### Step 2: Create Single Pull Request
+
+          After the tool provides the upgrade guidance:
+          1. Implement ALL recommended changes in ONE commit/PR
+          2. Create a PR with title: \`⬆️ [UPGRADE] Java 8→21 + Spring Boot 2.7→3.x Full Stack Modernization\`
+          3. Reference this issue in the PR description: \`Fixes #ISSUE_NUMBER\`
+
+          #### Requirements
+
+          - ✅ Use \`appmod-run-task\` MCP tool for guidance
+          - ✅ **Single PR** with all three changes (Java + Spring Boot + jakarta.*)
+          - ✅ Verify build passes after all changes
+          - ✅ Verify tests pass after all changes
+          - ❌ Do NOT split into multiple PRs (these are interdependent!)
           EOF
             )
 
@@ -259,24 +277,36 @@ jobs:
 
           ---
 
-          ### Instructions
+          ### 🤖 Instructions for Copilot
 
-          **Agent:** \`security-fixer\`
+          You are a security fixer agent. Your task is to fix this specific vulnerability using the \`appmod-run-task\` MCP tool.
 
-          Follow the instructions in \`.github/agents/security-fixer.md\`
+          #### Step 1: Use the appmod-run-task Tool
 
-          **Use the \`appmod-run-task\` tool to fix this vulnerability.**
+          Call the \`appmod-run-task\` tool with this task description:
 
-          Task: Fix $FINDING_ID vulnerability as identified in the evidence above.
+          \`\`\`
+          Fix $FINDING_ID vulnerability: $FINDING_NAME
 
-          ---
+          Evidence: $EVIDENCE
 
-          ### Requirements
+          Scan the entire codebase for ALL occurrences of this vulnerability pattern (not just the example shown).
+          Apply the fix to all locations found.
+          \`\`\`
 
-          1. Fix ONLY this specific vulnerability ($FINDING_ID)
-          2. Create a PR with the fix
-          3. Reference this issue in the PR description
-          4. Do NOT fix other issues in the same PR
+          #### Step 2: Create Pull Request
+
+          After the tool provides the fix:
+          1. Implement the recommended changes
+          2. Create a PR with title: \`🔒 Fix $FINDING_ID: $FINDING_NAME\`
+          3. Reference this issue in the PR description: \`Fixes #ISSUE_NUMBER\`
+
+          #### Requirements
+
+          - ✅ Use \`appmod-run-task\` MCP tool for guidance
+          - ✅ Scan for ALL occurrences (not just the one in evidence)
+          - ✅ Fix ONLY this vulnerability ($FINDING_ID)
+          - ❌ Do NOT fix other unrelated issues in the same PR
           EOF
               )
 
@@ -313,24 +343,36 @@ jobs:
 
           ---
 
-          ### Instructions
+          ### 🤖 Instructions for Copilot
 
-          **Agent:** \`security-fixer\`
+          You are a language version upgrade agent. Your task is to upgrade this project using the \`appmod-run-task\` MCP tool.
 
-          Follow the instructions in \`.github/agents/security-fixer.md\`
+          #### Step 1: Use the appmod-run-task Tool
 
-          **Use the \`appmod-run-task\` tool to upgrade this code.**
+          Call the \`appmod-run-task\` tool with this task description:
 
-          Task: $TASK_DESC
+          \`\`\`
+          $TASK_DESC
 
-          ---
+          Evidence: $EVIDENCE
 
-          ### Requirements
+          Scan the entire codebase for ALL occurrences that need upgrading (not just the example shown).
+          Apply the upgrade to all locations found.
+          \`\`\`
 
-          1. Fix ONLY this specific finding ($FINDING_ID)
-          2. Create a PR with the fix
-          3. Reference this issue in the PR description
-          4. Do NOT fix other issues in the same PR
+          #### Step 2: Create Pull Request
+
+          After the tool provides the upgrade guidance:
+          1. Implement the recommended changes
+          2. Create a PR with title: \`⬆️ [$FINDING_ID] $FINDING_NAME\`
+          3. Reference this issue in the PR description: \`Fixes #ISSUE_NUMBER\`
+
+          #### Requirements
+
+          - ✅ Use \`appmod-run-task\` MCP tool for guidance
+          - ✅ Scan for ALL occurrences (not just the one in evidence)
+          - ✅ Fix ONLY this specific finding ($FINDING_ID)
+          - ❌ Do NOT fix other unrelated issues in the same PR
           EOF
               )
 
