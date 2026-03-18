@@ -79,28 +79,41 @@ public class PhotoServiceImpl implements PhotoService {
         result.setFileName(file.getOriginalFilename());
 
         try {
-            // Validate file type
-            if (!allowedMimeTypes.contains(file.getContentType().toLowerCase())) {
+            // Read file bytes first so we can validate by actual content (magic bytes)
+            byte[] photoData;
+            try {
+                photoData = file.getBytes();
+            } catch (IOException ex) {
+                logger.error("Error reading file data for {}", file.getOriginalFilename(), ex);
                 result.setSuccess(false);
-                result.setErrorMessage("File type not supported. Please upload JPEG, PNG, GIF, or WebP images.");
-                logger.warn("Upload rejected: Invalid file type {} for {}", 
-                    file.getContentType(), file.getOriginalFilename());
-                return result;
-            }
-
-            // Validate file size
-            if (file.getSize() > maxFileSizeBytes) {
-                result.setSuccess(false);
-                result.setErrorMessage(String.format("File size exceeds %dMB limit.", maxFileSizeBytes / 1024 / 1024));
-                logger.warn("Upload rejected: File size {} exceeds limit for {}", 
-                    file.getSize(), file.getOriginalFilename());
+                result.setErrorMessage("Error reading file data. Please try again.");
                 return result;
             }
 
             // Validate file length
-            if (file.getSize() <= 0) {
+            if (photoData.length <= 0) {
                 result.setSuccess(false);
                 result.setErrorMessage("File is empty.");
+                return result;
+            }
+
+            // Validate file type using magic bytes from actual file content,
+            // not the client-supplied Content-Type header (which can be spoofed)
+            String detectedMimeType = detectMimeTypeFromBytes(photoData);
+            if (detectedMimeType == null || !allowedMimeTypes.contains(detectedMimeType)) {
+                result.setSuccess(false);
+                result.setErrorMessage("File type not supported. Please upload JPEG, PNG, GIF, or WebP images.");
+                logger.warn("Upload rejected: Unrecognized file signature for {}, detected type: {}, client-supplied type: {}",
+                    file.getOriginalFilename(), detectedMimeType, file.getContentType());
+                return result;
+            }
+
+            // Validate file size (use photoData.length for consistency with actual read bytes)
+            if (photoData.length > maxFileSizeBytes) {
+                result.setSuccess(false);
+                result.setErrorMessage(String.format("File size exceeds %dMB limit.", maxFileSizeBytes / 1024 / 1024));
+                logger.warn("Upload rejected: File size {} exceeds limit for {}", 
+                    photoData.length, file.getOriginalFilename());
                 return result;
             }
 
@@ -109,28 +122,15 @@ public class PhotoServiceImpl implements PhotoService {
             String storedFileName = UUID.randomUUID().toString() + extension;
             String relativePath = "/uploads/" + storedFileName; // For compatibility only
 
-            // Extract image dimensions and read file data
+            // Extract image dimensions from byte array
             Integer width = null;
             Integer height = null;
-            byte[] photoData = null;
-            
-            try {
-                // Read file content for database storage
-                photoData = file.getBytes();
-                
-                // Extract image dimensions from byte array
-                try (ByteArrayInputStream bis = new ByteArrayInputStream(photoData)) {
-                    BufferedImage image = ImageIO.read(bis);
-                    if (image != null) {
-                        width = image.getWidth();
-                        height = image.getHeight();
-                    }
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(photoData)) {
+                BufferedImage image = ImageIO.read(bis);
+                if (image != null) {
+                    width = image.getWidth();
+                    height = image.getHeight();
                 }
-            } catch (IOException ex) {
-                logger.error("Error reading file data for {}", file.getOriginalFilename(), ex);
-                result.setSuccess(false);
-                result.setErrorMessage("Error reading file data. Please try again.");
-                return result;
             } catch (Exception ex) {
                 logger.warn("Could not extract image dimensions for {}", file.getOriginalFilename(), ex);
                 // Continue without dimensions - not critical
@@ -143,7 +143,7 @@ public class PhotoServiceImpl implements PhotoService {
                 storedFileName,
                 relativePath, // Keep for compatibility, not used for serving
                 file.getSize(),
-                file.getContentType()
+                detectedMimeType  // Use server-detected MIME type, not client-supplied header
             );
             photo.setWidth(width);
             photo.setHeight(height);
@@ -214,6 +214,58 @@ public class PhotoServiceImpl implements PhotoService {
     public Optional<Photo> getNextPhoto(Photo currentPhoto) {
         List<Photo> newerPhotos = photoRepository.findPhotosUploadedAfter(currentPhoto.getUploadedAt());
         return newerPhotos.isEmpty() ? Optional.<Photo>empty() : Optional.of(newerPhotos.get(0));
+    }
+
+    // Magic byte signatures for supported image formats
+    private static final byte[] JPEG_MAGIC  = {(byte)0xFF, (byte)0xD8, (byte)0xFF};
+    private static final byte[] PNG_MAGIC   = {(byte)0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
+    private static final byte[] GIF87_MAGIC = {0x47, 0x49, 0x46, 0x38, 0x37, 0x61}; // GIF87a
+    private static final byte[] GIF89_MAGIC = {0x47, 0x49, 0x46, 0x38, 0x39, 0x61}; // GIF89a
+    private static final byte[] RIFF_MAGIC  = {0x52, 0x49, 0x46, 0x46};             // RIFF (WebP container)
+    private static final byte[] WEBP_MARKER = {0x57, 0x45, 0x42, 0x50};             // WEBP
+
+    /**
+     * Detect the MIME type of a file by inspecting its magic bytes (file signature).
+     * This provides server-side validation independent of the client-supplied Content-Type header.
+     *
+     * @param bytes the raw file bytes
+     * @return the detected MIME type, or {@code null} if the signature is unrecognised
+     */
+    private String detectMimeTypeFromBytes(byte[] bytes) {
+        if (bytes == null || bytes.length < 12) {
+            return null;
+        }
+        if (startsWith(bytes, JPEG_MAGIC)) {
+            return "image/jpeg";
+        }
+        if (startsWith(bytes, PNG_MAGIC)) {
+            return "image/png";
+        }
+        if (startsWith(bytes, GIF87_MAGIC) || startsWith(bytes, GIF89_MAGIC)) {
+            return "image/gif";
+        }
+        // WebP: bytes 0-3 == "RIFF", bytes 8-11 == "WEBP"
+        if (bytes.length >= 12 && startsWith(bytes, RIFF_MAGIC)
+                && bytes[8] == WEBP_MARKER[0] && bytes[9] == WEBP_MARKER[1]
+                && bytes[10] == WEBP_MARKER[2] && bytes[11] == WEBP_MARKER[3]) {
+            return "image/webp";
+        }
+        return null;
+    }
+
+    /**
+     * Returns {@code true} if {@code data} starts with all bytes in {@code prefix}.
+     */
+    private boolean startsWith(byte[] data, byte[] prefix) {
+        if (data.length < prefix.length) {
+            return false;
+        }
+        for (int i = 0; i < prefix.length; i++) {
+            if (data[i] != prefix[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
