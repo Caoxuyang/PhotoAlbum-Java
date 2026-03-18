@@ -158,6 +158,16 @@
         });
     }
 
+    function escapeHtml(str) {
+        if (str == null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;');
+    }
+
     function createPhotoCard(photo) {
         const uploadDate = new Date(photo.uploadedAt);
         const formattedDate = uploadDate.toLocaleString('en-US', {
@@ -175,18 +185,20 @@
 
         // Use photo URL with current timestamp to bypass all caching
         const timestamp = new Date().getTime();
-        const photoUrl = `/photo/${photo.id}?_t=${timestamp}`;
-        const detailUrl = `/detail/${photo.id}`;
+        const safeId = encodeURIComponent(photo.id);
+        const photoUrl = `/photo/${safeId}?_t=${timestamp}`;
+        const detailUrl = `/detail/${safeId}`;
+        const safeFileName = escapeHtml(photo.originalFileName);
 
         return `
             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
                 <div class="card photo-card h-100">
                     <a href="${detailUrl}" class="photo-link">
-                        <img src="${photoUrl}" class="card-img-top" alt="${photo.originalFileName}" loading="eager">
+                        <img src="${photoUrl}" class="card-img-top" alt="${safeFileName}" loading="eager">
                     </a>
                     <div class="card-body">
-                        <p class="card-text text-truncate" title="${photo.originalFileName}">
-                            <small><a href="${detailUrl}" class="text-decoration-none text-dark">${photo.originalFileName}</a></small>
+                        <p class="card-text text-truncate" title="${safeFileName}">
+                            <small><a href="${detailUrl}" class="text-decoration-none text-dark">${safeFileName}</a></small>
                         </p>
                         <p class="card-text">
                             <small class="text-muted">${formattedDate}</small>
@@ -214,7 +226,7 @@
 
     function showErrors(errors) {
         uploadErrors.innerHTML = '<strong>Upload errors:</strong><ul class="mb-0 mt-2">' +
-            errors.map(e => `<li>${e}</li>`).join('') +
+            errors.map(e => `<li>${escapeHtml(e)}</li>`).join('') +
             '</ul>';
         uploadErrors.classList.remove('d-none');
     }
