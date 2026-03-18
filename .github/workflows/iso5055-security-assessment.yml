@@ -54,7 +54,7 @@ jobs:
           SEVERITY_FILTER: ${{ inputs.severity_filter || 'mandatory' }}
           ASSESSMENT_DOMAINS: ${{ inputs.assessment_domains || 'Security' }}
         run: |
-          TITLE="🔒 [ISO5055] Run Assessment - REPORT ONLY"
+          TITLE="🌲 [Evergreen] Code Health Assessment - ${ASSESSMENT_DOMAINS}"
           SEVERITY_UPPER=$(echo "$SEVERITY_FILTER" | tr '[:lower:]' '[:upper:]')
 
           # First create issue with placeholder, then update with actual number
