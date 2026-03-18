@@ -1,34 +1,34 @@
--- This script runs automatically when Oracle XE container starts
--- It creates the photoalbum user and grants necessary privileges
+-- This script runs automatically when Oracle Free container starts
+-- The user is created automatically by the gvenzl/oracle-free image using
+-- the APP_USER and APP_USER_PASSWORD environment variables.
+-- This script only grants additional privileges to that pre-created user.
 
 ALTER SESSION SET "_ORACLE_SCRIPT"=true;
 
--- Create photoalbum user
-CREATE USER photoalbum IDENTIFIED BY photoalbum;
-
--- Grant system privileges
-GRANT CONNECT TO photoalbum;
-GRANT RESOURCE TO photoalbum;
-GRANT DBA TO photoalbum;
-GRANT CREATE SESSION TO photoalbum;
-GRANT CREATE TABLE TO photoalbum;
-GRANT CREATE SEQUENCE TO photoalbum;
-GRANT CREATE VIEW TO photoalbum;
-GRANT CREATE PROCEDURE TO photoalbum;
-GRANT CREATE TRIGGER TO photoalbum;
-GRANT CREATE TYPE TO photoalbum;
-GRANT CREATE SYNONYM TO photoalbum;
-GRANT UNLIMITED TABLESPACE TO photoalbum;
+-- Grant system privileges to the application user
+-- The APP_USER variable is substituted by the calling shell script via SQL*Plus -v flag
+GRANT CONNECT TO &&APP_USER;
+GRANT RESOURCE TO &&APP_USER;
+GRANT DBA TO &&APP_USER;
+GRANT CREATE SESSION TO &&APP_USER;
+GRANT CREATE TABLE TO &&APP_USER;
+GRANT CREATE SEQUENCE TO &&APP_USER;
+GRANT CREATE VIEW TO &&APP_USER;
+GRANT CREATE PROCEDURE TO &&APP_USER;
+GRANT CREATE TRIGGER TO &&APP_USER;
+GRANT CREATE TYPE TO &&APP_USER;
+GRANT CREATE SYNONYM TO &&APP_USER;
+GRANT UNLIMITED TABLESPACE TO &&APP_USER;
 
 -- Grant object privileges needed by Hibernate
-GRANT SELECT ANY DICTIONARY TO photoalbum;
-GRANT CREATE ANY INDEX TO photoalbum;
-GRANT ALTER ANY INDEX TO photoalbum;
-GRANT DROP ANY INDEX TO photoalbum;
+GRANT SELECT ANY DICTIONARY TO &&APP_USER;
+GRANT CREATE ANY INDEX TO &&APP_USER;
+GRANT ALTER ANY INDEX TO &&APP_USER;
+GRANT DROP ANY INDEX TO &&APP_USER;
 
 -- Set default and temporary tablespace
-ALTER USER photoalbum DEFAULT TABLESPACE USERS;
-ALTER USER photoalbum TEMPORARY TABLESPACE TEMP;
+ALTER USER &&APP_USER DEFAULT TABLESPACE USERS;
+ALTER USER &&APP_USER TEMPORARY TABLESPACE TEMP;
 
 -- Commit the changes
 COMMIT;
