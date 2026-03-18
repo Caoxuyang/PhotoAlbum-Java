@@ -160,11 +160,11 @@ jobs:
 
           These upgrades **MUST be done together in a single PR** because Spring Boot 3.x requires Java 17+ and jakarta.* namespaces:
 
-          1. **Java Runtime Upgrade**:
+          1. **Upgrade Java Runtime**:
              - Evidence: $JAVA_EVIDENCE
              - Upgrade from Java 8 → Java 21 (LTS)
 
-          2. **Spring Boot Framework Upgrade**:
+          2. **Upgrade Spring Boot Framework**:
              - Evidence: $SPRING_EVIDENCE
              - Upgrade from Spring Boot 2.7.18 → Spring Boot 3.4.x (latest stable)
           ${JAKARTA_SECTION}
@@ -172,40 +172,33 @@ jobs:
 
           ### 🤖 Instructions for Copilot
 
-          You are a language version upgrade agent. Your task is to perform this **interdependent full-stack upgrade** using the \`appmod-run-task\` MCP tool.
-
           ⚠️ **CRITICAL:** These upgrades are interdependent. Spring Boot 3.x requires Java 17+ and jakarta.* namespaces. All changes MUST be in ONE PR.
 
-          #### Step 1: Use the appmod-run-task Tool
+          #### Your Task
 
-          Call the \`appmod-run-task\` tool with this task description:
+          Upgrade this project from Java 8 + Spring Boot 2.7.18 to Java 21 + Spring Boot 3.4.x with jakarta.* namespace migration.
 
-          \`\`\`
-          Upgrade project from Java 8 + Spring Boot 2.7.18 to Java 21 + Spring Boot 3.4.x with jakarta.* namespace migration
-
-          Evidence:
+          **Evidence:**
           - Java version: $JAVA_EVIDENCE
           - Spring Boot version: $SPRING_EVIDENCE
 
-          This is a full-stack upgrade. You MUST:
-          1. Upgrade Java version in pom.xml from 1.8 to 21
-          2. Upgrade Spring Boot parent version from 2.7.18 to 3.4.x (latest stable)
-          3. Migrate ALL javax.* imports to jakarta.* namespaces (required for Spring Boot 3.x)
+          **You MUST perform these upgrades together:**
+          1. **Upgrade JDK** version in pom.xml from 1.8 to 21
+          2. **Upgrade Spring Boot** parent version from 2.7.18 to 3.4.x (latest stable)
+          3. **Migrate javax.* to jakarta.*** namespaces (required for Spring Boot 3.x compatibility)
 
           Scan the entire codebase for ALL occurrences that need upgrading.
-          \`\`\`
 
-          #### Step 2: Create Single Pull Request
+          #### Create Pull Request
 
-          After the tool provides the upgrade guidance:
-          1. Implement ALL recommended changes in ONE commit/PR
-          2. Create a PR with title: \`⬆️ [UPGRADE] Java 8→21 + Spring Boot 2.7→3.x Full Stack Modernization\`
+          After implementing all changes:
+          1. Create ONE PR with all three upgrades together
+          2. PR title: \`⬆️ [UPGRADE] Java 8→21 + Spring Boot 2.7→3.x Full Stack Modernization\`
           3. Reference this issue in the PR description: \`Fixes #ISSUE_NUMBER\`
 
           #### Requirements
 
-          - ✅ Use \`appmod-run-task\` MCP tool for guidance
-          - ✅ **Single PR** with all three changes (Java + Spring Boot + jakarta.*)
+          - ✅ **Single PR** with all three changes (upgrade JDK + upgrade Spring Boot + migrate to jakarta.*)
           - ✅ Verify build passes after all changes
           - ✅ Verify tests pass after all changes
           - ❌ Do NOT split into multiple PRs (these are interdependent!)
@@ -345,31 +338,23 @@ jobs:
 
           ### 🤖 Instructions for Copilot
 
-          You are a language version upgrade agent. Your task is to upgrade this project using the \`appmod-run-task\` MCP tool.
+          #### Your Task
 
-          #### Step 1: Use the appmod-run-task Tool
-
-          Call the \`appmod-run-task\` tool with this task description:
-
-          \`\`\`
           $TASK_DESC
 
-          Evidence: $EVIDENCE
+          **Evidence:** $EVIDENCE
 
           Scan the entire codebase for ALL occurrences that need upgrading (not just the example shown).
           Apply the upgrade to all locations found.
-          \`\`\`
 
-          #### Step 2: Create Pull Request
+          #### Create Pull Request
 
-          After the tool provides the upgrade guidance:
-          1. Implement the recommended changes
-          2. Create a PR with title: \`⬆️ [$FINDING_ID] $FINDING_NAME\`
-          3. Reference this issue in the PR description: \`Fixes #ISSUE_NUMBER\`
+          After implementing the changes:
+          1. Create a PR with title: \`⬆️ [$FINDING_ID] $FINDING_NAME\`
+          2. Reference this issue in the PR description: \`Fixes #ISSUE_NUMBER\`
 
           #### Requirements
 
-          - ✅ Use \`appmod-run-task\` MCP tool for guidance
           - ✅ Scan for ALL occurrences (not just the one in evidence)
           - ✅ Fix ONLY this specific finding ($FINDING_ID)
           - ❌ Do NOT fix other unrelated issues in the same PR
