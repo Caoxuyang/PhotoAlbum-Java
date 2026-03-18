@@ -37,7 +37,13 @@ A photo gallery application built with Spring Boot and Oracle Database, featurin
    cd PhotoAlbum-Java
    ```
 
-2. **Start the application**:
+2. **Configure credentials**:
+   ```bash
+   cp .env.example .env
+   # Edit .env and set DB_USERNAME and DB_PASSWORD
+   ```
+
+3. **Start the application**:
    ```bash
    # Use docker-compose directly
    docker-compose up --build -d
@@ -49,11 +55,11 @@ A photo gallery application built with Spring Boot and Oracle Database, featurin
    - Start the Photo Album application container
    - Automatically create the database schema using JPA/Hibernate
 
-3. **Wait for services to start**:
+4. **Wait for services to start**:
    - Oracle DB takes 2-3 minutes to initialize on first run
    - Application will start once Oracle is healthy
 
-4. **Access the application**:
+5. **Access the application**:
    - Open your browser and navigate to: **http://localhost:8080**
    - The application should be running and ready to use
 
@@ -65,8 +71,8 @@ A photo gallery application built with Spring Boot and Oracle Database, featurin
   - `1521` (database) - mapped to host port 1521
   - `5500` (Enterprise Manager) - mapped to host port 5500
 - **Database**: `XE` (Express Edition)
-- **Schema**: `photoalbum`
-- **Username/Password**: `photoalbum/photoalbum`
+- **Schema**: Set via `DB_USERNAME` environment variable
+- **Username/Password**: Configured via `DB_USERNAME` / `DB_PASSWORD` environment variables
 
 ## Photo Album Java Application
 - **Port**: `8080` (mapped to host port 8080)
@@ -124,17 +130,15 @@ The application creates the following table structure in Oracle:
 ### Running Locally (without Docker)
 
 1. **Install Oracle Database** (or use Oracle XE)
-2. **Create database user**:
+2. **Create database user** (replace `<your_username>` and `<your_password>` with your chosen values):
    ```sql
-   CREATE USER photoalbum IDENTIFIED BY photoalbum;
-   GRANT CONNECT, RESOURCE, DBA TO photoalbum;
+   CREATE USER <your_username> IDENTIFIED BY <your_password>;
+   GRANT CONNECT, RESOURCE, DBA TO <your_username>;
    ```
-3. **Update application.properties**:
-   ```properties
-   spring.datasource.url=jdbc:oracle:thin:@localhost:1521:XE
-   spring.datasource.username=photoalbum
-   spring.datasource.password=photoalbum
-   spring.jpa.hibernate.ddl-auto=create
+3. **Set environment variables** (or copy `.env.example` to `.env` and fill in your values):
+   ```bash
+   export DB_USERNAME=<your_username>
+   export DB_PASSWORD=<your_password>
    ```
 4. **Run the application**:
    ```bash
@@ -165,8 +169,9 @@ java -jar target/photo-album-1.0.0.jar
 
 2. **Database connection errors**:
    ```bash
-   # Verify Oracle is ready
-   docker exec -it photoalbum-oracle sqlplus photoalbum/photoalbum@//localhost:1521/XE
+   # Source your .env file first, then verify Oracle is ready
+   source .env
+   docker exec -it photoalbum-oracle sqlplus ${DB_USERNAME}/${DB_PASSWORD}@//localhost:1521/XE
    ```
 
 3. **Permission errors**:
@@ -207,7 +212,7 @@ docker-compose down -v
 
 Oracle Enterprise Manager is available at `http://localhost:5500/em` for database administration:
 - **Username**: `system`
-- **Password**: `photoalbum`
+- **Password**: set via `DB_PASSWORD` environment variable
 - **Container**: `XE`
 
 ## Performance Notes
