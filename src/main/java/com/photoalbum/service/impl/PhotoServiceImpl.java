@@ -1,6 +1,7 @@
 package com.photoalbum.service.impl;
 
 import com.photoalbum.model.Photo;
+import com.photoalbum.model.PhotoBinaryData;
 import com.photoalbum.model.UploadResult;
 import com.photoalbum.repository.PhotoRepository;
 import com.photoalbum.service.PhotoService;
@@ -169,6 +170,29 @@ public class PhotoServiceImpl implements PhotoService {
         }
 
         return result;
+    }
+
+    /**
+     * Get the binary file data for a photo by ID, encapsulating entity access within the service layer
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<PhotoBinaryData> getPhotoFileData(String id) {
+        try {
+            Optional<Photo> photoOpt = photoRepository.findById(id);
+            if (!photoOpt.isPresent()) {
+                return Optional.empty();
+            }
+            Photo photo = photoOpt.get();
+            byte[] data = photo.getPhotoData();
+            if (data == null || data.length == 0) {
+                return Optional.empty();
+            }
+            return Optional.of(new PhotoBinaryData(data, photo.getOriginalFileName(), photo.getMimeType()));
+        } catch (Exception ex) {
+            logger.error("Error retrieving photo file data for ID {}", id, ex);
+            throw new RuntimeException("Error retrieving photo file data", ex);
+        }
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.photoalbum.service;
 
 import com.photoalbum.model.Photo;
+import com.photoalbum.model.PhotoBinaryData;
 import com.photoalbum.model.UploadResult;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -45,6 +46,13 @@ public interface PhotoService {
      * @return Previous photo if found, empty otherwise
      */
     Optional<Photo> getPreviousPhoto(Photo currentPhoto);
+
+    /**
+     * Get the binary file data for a photo by ID
+     * @param id Photo ID
+     * @return PhotoBinaryData if found and data is present, empty otherwise
+     */
+    Optional<PhotoBinaryData> getPhotoFileData(String id);
 
     /**
      * Get the next photo (newer) for navigation

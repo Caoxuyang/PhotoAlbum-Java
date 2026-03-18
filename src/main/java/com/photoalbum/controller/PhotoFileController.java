@@ -1,6 +1,6 @@
 package com.photoalbum.controller;
 
-import com.photoalbum.model.Photo;
+import com.photoalbum.model.PhotoBinaryData;
 import com.photoalbum.service.PhotoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,43 +43,35 @@ public class PhotoFileController {
 
         try {
             logger.info("=== DEBUGGING: Serving photo request for ID {} ===", id);
-            Optional<Photo> photoOpt = photoService.getPhotoById(id);
+            Optional<PhotoBinaryData> photoDataOpt = photoService.getPhotoFileData(id);
 
-            if (!photoOpt.isPresent()) {
-                logger.warn("Photo with ID {} not found", id);
+            if (!photoDataOpt.isPresent()) {
+                logger.warn("Photo with ID {} not found or has no data", id);
                 return ResponseEntity.notFound().build();
             }
 
-            Photo photo = photoOpt.get();
-            logger.info("Found photo: originalFileName={}, mimeType={}", 
-                    photo.getOriginalFileName(), photo.getMimeType());
+            PhotoBinaryData photoData = photoDataOpt.get();
+            byte[] data = photoData.getData();
 
-            // Get photo data from Oracle database BLOB
-            byte[] photoData = photo.getPhotoData();
-            if (photoData == null || photoData.length == 0) {
-                logger.error("No photo data found for photo ID {}", id);
-                return ResponseEntity.notFound().build();
-            }
+            logger.info("Found photo: originalFileName={}, mimeType={}",
+                    photoData.getOriginalFileName(), photoData.getMimeType());
+            logger.info("Photo data retrieved: {} bytes, first 10 bytes: {}",
+                    data.length,
+                    data.length >= 10 ? java.util.Arrays.toString(java.util.Arrays.copyOf(data, 10)) : "less than 10 bytes");
 
-            logger.info("Photo data retrieved: {} bytes, first 10 bytes: {}", 
-                    photoData.length, 
-                    photoData.length >= 10 ? java.util.Arrays.toString(java.util.Arrays.copyOf(photoData, 10)) : "less than 10 bytes");
-
-            // Create resource from byte array
-            Resource resource = new ByteArrayResource(photoData);
+            Resource resource = new ByteArrayResource(data);
 
             logger.info("Serving photo ID {} ({}, {} bytes) from Oracle database",
-                    id, photo.getOriginalFileName(), photoData.length);
+                    id, photoData.getOriginalFileName(), data.length);
 
-            // Return the photo data with appropriate content type and aggressive no-cache headers
             return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(photo.getMimeType()))
+                    .contentType(MediaType.parseMediaType(photoData.getMimeType()))
                     .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate, private")
                     .header(HttpHeaders.PRAGMA, "no-cache")
                     .header(HttpHeaders.EXPIRES, "0")
                     .header("X-Photo-ID", String.valueOf(id))
-                    .header("X-Photo-Name", photo.getOriginalFileName())
-                    .header("X-Photo-Size", String.valueOf(photoData.length))
+                    .header("X-Photo-Name", photoData.getOriginalFileName())
+                    .header("X-Photo-Size", String.valueOf(data.length))
                     .body(resource);
         } catch (Exception ex) {
             logger.error("Error serving photo with ID {} from Oracle database", id, ex);
