@@ -1,13 +1,17 @@
-name: "ISO5055 Security Assessment"
+name: "Evergreen Code Health Assessment"
 
 on:
-  # Nightly scan
-  schedule:
-    - cron: '0 2 * * *'  # 2 AM UTC daily
-
-  # Manual trigger
+  # Manual trigger only
   workflow_dispatch:
     inputs:
+      assessment_domains:
+        description: 'Assessment domains to scan'
+        required: true
+        type: choice
+        options:
+          - 'Security'
+          - 'Language Version'
+          - 'Security + Language Version'
       severity_filter:
         description: 'Severity level to fix (for Milestone 2)'
         required: true
@@ -48,8 +52,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SEVERITY_FILTER: ${{ inputs.severity_filter || 'mandatory' }}
+          ASSESSMENT_DOMAINS: ${{ inputs.assessment_domains || 'Security' }}
         run: |
-          TITLE="🔒 [ISO5055] Run Security Assessment - REPORT ONLY"
+          TITLE="🔒 [ISO5055] Run Assessment - REPORT ONLY"
           SEVERITY_UPPER=$(echo "$SEVERITY_FILTER" | tr '[:lower:]' '[:upper:]')
 
           # First create issue with placeholder, then update with actual number
@@ -63,9 +68,10 @@ jobs:
           echo "issue_url=$ISSUE_URL" >> $GITHUB_OUTPUT
 
           # Now update issue body with correct issue number
-          gh issue edit $ISSUE_NUMBER --body "## Task: Run ISO 5055 Security Assessment
+          gh issue edit $ISSUE_NUMBER --body "## Task: Run ISO 5055 Assessment
 
           **Agent:** \`security-assessment-reporter\`
+          **Assessment Domains:** ${ASSESSMENT_DOMAINS}
           **Severity Filter:** ${SEVERITY_UPPER}
 
           ---
@@ -84,7 +90,7 @@ jobs:
           Follow the instructions in \`.github/agents/security-assessment-reporter.md\`
 
           **Steps:**
-          1. Call tool \`appmod-iso5055-security-assessment\`
+          1. Call tool \`appmod-iso5055-security-assessment\` for each selected domain
           2. Format the results as markdown
           3. Post the report using the \`add_issue_comment\` MCP tool with issue_number=${ISSUE_NUMBER}
 
@@ -120,9 +126,10 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## 📋 ISO5055 Security Assessment" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 ISO5055 Assessment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ **Issue Created:** #${{ steps.create-issue.outputs.issue_number }}" >> $GITHUB_STEP_SUMMARY
           echo "🔗 **URL:** ${{ steps.create-issue.outputs.issue_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "🤖 **Copilot:** Assigned to run security assessment" >> $GITHUB_STEP_SUMMARY
+          echo "🤖 **Copilot:** Assigned to run assessment" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Domains:** ${{ inputs.assessment_domains || 'Security' }}" >> $GITHUB_STEP_SUMMARY
           echo "🎯 **Severity Filter:** ${{ inputs.severity_filter || 'mandatory' }}" >> $GITHUB_STEP_SUMMARY

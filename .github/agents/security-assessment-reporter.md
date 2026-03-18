@@ -113,12 +113,18 @@ curl -s -w "\nHTTP_STATUS:%{http_code}" --max-time 30 \
 
 ## EXACT STEPS TO FOLLOW
 
-### Step 1: Get the Issue Number AND Severity Filter
+### Step 1: Get the Issue Number, Assessment Domains, AND Severity Filter
 
-Read the issue body. Extract TWO pieces of information:
+Read the issue body. Extract THREE pieces of information:
 
 1. **Issue Number:** Look for `**Issue Number:** #XX` → Extract `XX` as integer
-2. **Severity Filter:** Look for `**Severity Filter:** XXXXX` → Extract the filter value
+2. **Assessment Domains:** Look for `**Assessment Domains:** XXXXX` → Extract the domains value
+3. **Severity Filter:** Look for `**Severity Filter:** XXXXX` → Extract the filter value
+
+**Assessment Domains Values:**
+- `Security` → Run security assessment only
+- `Language Version` → Run language version upgrade assessment only (domain="Java Upgrade" in tool)
+- `Security + Language Version` → Run both assessments
 
 **Severity Filter Values (hierarchical):**
 - `MANDATORY` → Include ONLY 🔴 Mandatory findings
@@ -126,11 +132,26 @@ Read the issue body. Extract TWO pieces of information:
 - `POTENTIAL` → Include 🔴 Mandatory, 🟠 Optional, AND 🟡 Potential findings
 - `ALL` → Include all findings (Mandatory + Optional + Potential + Information)
 
-### Step 2: Call the Assessment Tool
+### Step 2: Call the Assessment Tool(s)
 
-```
+**For each domain selected, call the tool with the appropriate domain parameter:**
+
+```bash
+# If "Security" is selected:
 Call tool: appmod-iso5055-security-assessment
+Parameters: domain="Security"
+
+# If "Language Version" is selected:
+Call tool: appmod-iso5055-security-assessment
+Parameters: domain="Java Upgrade"
+
+# If "Security + Language Version" is selected:
+# Call the tool TWICE (once for each domain)
 ```
+
+**IMPORTANT:** When calling the tool:
+- For "Security" domain → use `domain="Security"`
+- For "Language Version" domain → use `domain="Java Upgrade"` (exact tool parameter name)
 
 ### Step 3: Filter and Format as Markdown
 
@@ -141,27 +162,36 @@ Call tool: appmod-iso5055-security-assessment
 - If filter is `POTENTIAL`: Include Mandatory, Optional, AND `### 🟡 Potential Findings`
 - If filter is `ALL`: Include all severity sections
 
+**For multiple domains:** Create separate sections for each domain's findings.
+
 Include `<!-- ASSESSMENT_VERIFIED -->` at the start:
 
 ```markdown
 <!-- ASSESSMENT_VERIFIED -->
-## 📊 ISO 5055 Security Assessment Report
+## 📊 ISO 5055 Assessment Report
 
 **Assessment Date:** [date]
 **Repository:** Caoxuyang/PhotoAlbum-Java
+**Assessment Domains:** [EXACTLY as extracted from issue body]
 **Severity Filter:** [EXACTLY as extracted from issue body]
 
 ### 📋 Executive Summary
 
-| Severity | Count |
-|----------|-------|
-| 🔴 Mandatory | [count] |
-| 🟠 Optional | [count - or "N/A (filtered)" if not included] |
-| 🟡 Potential | [count - or "N/A (filtered)" if not included] |
-| 🔵 Information | [count - or "N/A (filtered)" if not included] |
-| **Actionable Findings** | [total matching filter] |
+| Domain | Severity | Count |
+|--------|----------|-------|
+| Security | 🔴 Mandatory | [count] |
+| Security | 🟠 Optional | [count - or "N/A (filtered)" if not included] |
+| Security | 🟡 Potential | [count - or "N/A (filtered)" if not included] |
+| Security | 🔵 Information | [count - or "N/A (filtered)" if not included] |
+| Language Version | 🔴 Mandatory | [count] |
+| Language Version | 🟠 Optional | [count - or "N/A (filtered)" if not included] |
+| Language Version | 🟡 Potential | [count - or "N/A (filtered)" if not included] |
+| Language Version | 🔵 Information | [count - or "N/A (filtered)" if not included] |
+| **Total Actionable** | | [total matching filter across all domains] |
 
 ---
+
+## 🔒 Security Domain Findings
 
 ### 🔴 Mandatory Findings
 
@@ -170,10 +200,24 @@ Include `<!-- ASSESSMENT_VERIFIED -->` at the start:
 - **Description:** [description]
 - **Evidence:** `[file:line]` — [evidence]
 
+---
+
+## 🔄 Language Version Domain Findings
+
+### 🔴 Mandatory Findings
+
+#### [Finding ID]: [name]
+- **Category:** [category]
+- **Description:** [description]
+- **Evidence:** `[file:line]` — [evidence]
+
 [... only include sections matching the severity filter ...]
 ```
 
-**IMPORTANT:** The `**Severity Filter:**` line in the report MUST exactly match the filter from the issue body. This is used by Milestone 2 to determine which findings to create sub-issues for.
+**IMPORTANT:**
+- The `**Assessment Domains:**` line in the report MUST exactly match the domains from the issue body.
+- The `**Severity Filter:**` line in the report MUST exactly match the filter from the issue body.
+- These are used by Milestone 2 to determine which findings to create sub-issues for.
 
 ### Step 4: Post Using MCP JSON-RPC
 
@@ -188,7 +232,8 @@ Use the exact curl commands shown in the "HOW TO POST THE REPORT" section above.
 After `HTTP_STATUS:200`, say:
 ```
 ✅ Assessment report posted to issue #[ISSUE_NUMBER]
-Summary: [X] mandatory, [Y] optional, [Z] potential, [W] information findings.
+Domains: [list domains scanned]
+Summary: [X] findings across all domains matching severity filter.
 Task complete.
 ```
 
