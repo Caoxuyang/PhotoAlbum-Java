@@ -102,12 +102,12 @@ Locations found:
 
 | Finding ID Pattern | Upgrade Type | Task Description |
 |--------------------|--------------|------------------|
-| `LANG-JAVA-VERSION` | Java Runtime | "Upgrade project from Java 8 to Java 21 (LTS)" |
-| `LANG-SPRING-BOOT` | Spring Boot Framework | "Upgrade Spring Boot from 2.7.x to 3.2.x (latest stable)" |
-| `LANG-JAKARTA-NAMESPACE` | API Migration | "Migrate javax.* imports to jakarta.* namespaces" |
+| `UPGRADE-JAVA-VERSION` | Java Runtime | "Upgrade project from Java 8 to Java 21 (LTS)" |
+| `UPGRADE-SPRING-BOOT` | Spring Boot Framework | "Upgrade Spring Boot from 2.7.x to 3.2.x (latest stable)" |
+| `UPGRADE-JAKARTA-NAMESPACE` | API Migration | "Migrate javax.* imports to jakarta.* namespaces" |
 | Other/CWE-477 | General | "Upgrade this project to the latest Java version" |
 
-**Example for LANG-JAVA-VERSION:**
+**Example for UPGRADE-JAVA-VERSION:**
 ```
 Call tool: appmod-run-task
 
@@ -120,7 +120,7 @@ Locations found:
 Target: Java 21 (current LTS version with extended support)
 ```
 
-**Example for LANG-SPRING-BOOT:**
+**Example for UPGRADE-SPRING-BOOT:**
 ```
 Call tool: appmod-run-task
 
@@ -132,7 +132,7 @@ Locations found:
 Note: Spring Boot 3.x requires Java 17+ and jakarta.* namespaces (javax.* migration required)
 ```
 
-**Example for LANG-JAKARTA-NAMESPACE:**
+**Example for UPGRADE-JAKARTA-NAMESPACE:**
 ```
 Call tool: appmod-run-task
 

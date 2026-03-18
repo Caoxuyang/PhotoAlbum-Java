@@ -179,19 +179,19 @@ These version upgrade recommendations (Java 8 → latest, Spring Boot 2.x → 3.
 **YOU MUST create proper findings for each outdated version:**
 
 ```markdown
-#### LANG-JAVA-VERSION: Upgrade Java Runtime Version
+#### UPGRADE-JAVA-VERSION: Upgrade Java Runtime Version
 - **Category:** Language Version / Runtime Upgrade
 - **Severity:** 🔴 Mandatory (overriding tool classification)
 - **Description:** Project uses Java 1.8 (Java 8) which is past its free public update deadline. Upgrade to Java 21 (LTS) for security patches and modern language features.
 - **Evidence:** `pom.xml:16` — `<java.version>1.8</java.version>`
 
-#### LANG-SPRING-BOOT: Upgrade Spring Boot Framework
+#### UPGRADE-SPRING-BOOT: Upgrade Spring Boot Framework
 - **Category:** Language Version / Framework Upgrade
 - **Severity:** 🔴 Mandatory (overriding tool classification)
 - **Description:** Project uses Spring Boot 2.7.18 which reached end-of-OSS support in November 2023. Upgrade to Spring Boot 3.x for security patches and continued support.
 - **Evidence:** `pom.xml:10-12` — `spring-boot-starter-parent:2.7.18`
 
-#### LANG-JAKARTA-NAMESPACE: Migrate javax.* to jakarta.*
+#### UPGRADE-JAKARTA-NAMESPACE: Migrate javax.* to jakarta.*
 - **Category:** Language Version / API Migration
 - **Severity:** 🟠 Optional (prerequisite for Spring Boot 3.x)
 - **Description:** Project uses obsolete `javax.persistence.*` and `javax.validation.*` namespaces. Must migrate to `jakarta.*` namespaces as required by Spring Boot 3.x.

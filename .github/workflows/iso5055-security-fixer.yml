@@ -122,7 +122,97 @@ jobs:
 
           echo "Found $(wc -l < /tmp/finding_entries.txt) finding entries to process"
 
-          # Process each finding entry
+          # Detect Language Version upgrade group (Java + Spring Boot + Jakarta)
+          HAS_JAVA_UPGRADE=$(grep -c "^#### UPGRADE-JAVA-VERSION:" /tmp/finding_entries.txt || true)
+          HAS_SPRING_UPGRADE=$(grep -c "^#### UPGRADE-SPRING-BOOT:" /tmp/finding_entries.txt || true)
+          HAS_JAKARTA_UPGRADE=$(grep -c "^#### UPGRADE-JAKARTA-NAMESPACE:" /tmp/finding_entries.txt || true)
+
+          # If we have Java + Spring Boot upgrades, create ONE combined sub-issue
+          if [[ $HAS_JAVA_UPGRADE -gt 0 ]] && [[ $HAS_SPRING_UPGRADE -gt 0 ]]; then
+            echo "🔗 Detected interdependent upgrades: Java + Spring Boot (+ Jakarta if present)"
+            echo "Creating combined sub-issue for full upgrade path..."
+
+            # Extract evidence from all related findings
+            JAVA_EVIDENCE=$(grep -A 5 "^#### UPGRADE-JAVA-VERSION:" /tmp/report.md | grep "Evidence:" | sed 's/.*Evidence:\*\* //')
+            SPRING_EVIDENCE=$(grep -A 5 "^#### UPGRADE-SPRING-BOOT:" /tmp/report.md | grep "Evidence:" | sed 's/.*Evidence:\*\* //')
+
+            JAKARTA_SECTION=""
+            if [[ $HAS_JAKARTA_UPGRADE -gt 0 ]]; then
+              JAKARTA_EVIDENCE=$(grep -A 5 "^#### UPGRADE-JAKARTA-NAMESPACE:" /tmp/report.md | grep "Evidence:" | sed 's/.*Evidence:\*\* //')
+              JAKARTA_SECTION="
+          3. **Jakarta Namespace Migration** (required for Spring Boot 3.x):
+             - Evidence: $JAKARTA_EVIDENCE
+             - Migrate \`javax.persistence.*\` → \`jakarta.persistence.*\`
+             - Migrate \`javax.validation.*\` → \`jakarta.validation.*\`
+          "
+            fi
+
+            SUB_ISSUE_BODY=$(cat <<EOF
+          ## ⬆️ Language Version Upgrade: Java 8 → 21 + Spring Boot 2.7 → 3.x
+
+          **Parent Issue:** #$PARENT_ISSUE
+          **Upgrade Type:** Full Stack Modernization (Java Runtime + Framework)
+          **Category:** Language Version / Interdependent Upgrades
+
+          ---
+
+          ### 🎯 Upgrade Path
+
+          These upgrades **MUST be done together in a single PR** because Spring Boot 3.x requires Java 17+ and jakarta.* namespaces:
+
+          1. **Java Runtime Upgrade**:
+             - Evidence: $JAVA_EVIDENCE
+             - Upgrade from Java 8 → Java 21 (LTS)
+
+          2. **Spring Boot Framework Upgrade**:
+             - Evidence: $SPRING_EVIDENCE
+             - Upgrade from Spring Boot 2.7.18 → Spring Boot 3.4.x (latest stable)
+          ${JAKARTA_SECTION}
+          ---
+
+          ### Instructions
+
+          **Agent:** \`security-fixer\`
+
+          Follow the instructions in \`.github/agents/security-fixer.md\`
+
+          **Use the \`appmod-run-task\` tool to perform the full upgrade.**
+
+          Task: Upgrade project from Java 8 + Spring Boot 2.7.18 to Java 21 + Spring Boot 3.4.x with jakarta.* namespace migration
+
+          ---
+
+          ### Requirements
+
+          1. **Single PR** with all three changes:
+             - Java version in pom.xml (1.8 → 21)
+             - Spring Boot parent version (2.7.18 → 3.4.x)
+             - Namespace migration (javax.* → jakarta.*)
+          2. Verify build passes after all changes
+          3. Verify tests pass after all changes
+          4. Reference this issue in the PR description
+          EOF
+            )
+
+            SUB_ISSUE_TITLE="⬆️ [UPGRADE] Java 8→21 + Spring Boot 2.7→3.x Full Stack Modernization"
+            LABELS="language-upgrade,copilot-fix,iso5055"
+
+            echo "Creating combined upgrade sub-issue..."
+            SUB_ISSUE_URL=$(gh issue create \
+              --title "$SUB_ISSUE_TITLE" \
+              --body "$SUB_ISSUE_BODY" \
+              --label "$LABELS")
+
+            SUB_ISSUE_NUMBER=$(echo "$SUB_ISSUE_URL" | grep -oE '[0-9]+$')
+            echo "✅ Created combined sub-issue #$SUB_ISSUE_NUMBER for Java + Spring Boot upgrade"
+            echo "$SUB_ISSUE_NUMBER" >> /tmp/sub_issues.txt
+
+            # Remove Language Version findings from the list so they don't get processed individually
+            grep -v "^#### UPGRADE-" /tmp/finding_entries.txt > /tmp/finding_entries_filtered.txt || true
+            mv /tmp/finding_entries_filtered.txt /tmp/finding_entries.txt
+          fi
+
+          # Process remaining individual findings (Security CWEs or standalone Language findings)
           while read -r line; do
             [[ -z "$line" ]] && continue
 
@@ -137,14 +227,14 @@ jobs:
 
               echo "Found Security: $FINDING_ID - $FINDING_NAME"
             else
-              # Language version finding
+              # Standalone Language version finding (shouldn't happen if grouping worked)
               FINDING_ID=$(echo "$line" | grep -oP '^#### \K[^:]+')
               FINDING_NAME=$(echo "$line" | sed 's/^#### [^:]*: //')
               FINDING_TYPE="Language Version"
               ISSUE_EMOJI="⬆️"
               LABELS="language-upgrade,copilot-fix,iso5055"
 
-              echo "Found Language Version: $FINDING_ID - $FINDING_NAME"
+              echo "Found standalone Language Version: $FINDING_ID - $FINDING_NAME"
             fi
 
             # Extract details for this finding (next few lines after the header)
@@ -194,13 +284,13 @@ jobs:
             else
               # Determine specific task based on Finding ID
               case "$FINDING_ID" in
-                LANG-JAVA-VERSION*)
+                UPGRADE-JAVA-VERSION*)
                   TASK_DESC="Upgrade project from Java 8 to Java 21 (LTS)"
                   ;;
-                LANG-SPRING-BOOT*)
+                UPGRADE-SPRING-BOOT*)
                   TASK_DESC="Upgrade Spring Boot from 2.7.x to 3.2.x (latest stable)"
                   ;;
-                LANG-JAKARTA-NAMESPACE*)
+                UPGRADE-JAKARTA-NAMESPACE*)
                   TASK_DESC="Migrate javax.* imports to jakarta.* namespaces"
                   ;;
                 *)
