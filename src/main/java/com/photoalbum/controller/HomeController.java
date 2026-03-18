@@ -25,6 +25,8 @@ public class HomeController {
 
     private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
 
+    private static final int MAX_FILES_PER_REQUEST = 10;
+
     private final PhotoService photoService;
 
     public HomeController(PhotoService photoService) {
@@ -62,6 +64,12 @@ public class HomeController {
         if (files == null || files.isEmpty()) {
             response.put("success", false);
             response.put("error", "No files provided");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (files.size() > MAX_FILES_PER_REQUEST) {
+            response.put("success", false);
+            response.put("error", "Too many files. Maximum allowed is " + MAX_FILES_PER_REQUEST + " files per request.");
             return ResponseEntity.badRequest().body(response);
         }
 
