@@ -136,13 +136,20 @@ public class PhotoServiceImpl implements PhotoService {
                 // Continue without dimensions - not critical
             }
 
-            // Create photo entity with database BLOB storage
+            // Validate that the actual byte array length matches the declared file size (CWE-130)
+            long actualSize = (long) photoData.length;
+            if (actualSize != file.getSize()) {
+                logger.warn("Length parameter inconsistency detected for {}: declared size={}, actual size={}",
+                    file.getOriginalFilename(), file.getSize(), actualSize);
+            }
+
+            // Create photo entity with database BLOB storage, using actual byte length for fileSize
             Photo photo = new Photo(
                 file.getOriginalFilename(),
                 photoData,  // Store actual photo data in Oracle database
                 storedFileName,
                 relativePath, // Keep for compatibility, not used for serving
-                file.getSize(),
+                actualSize,
                 file.getContentType()
             );
             photo.setWidth(width);
