@@ -98,17 +98,51 @@ Locations found:
 
 #### For Language Version Issues
 
+**Identify the specific upgrade type based on Finding ID:**
+
+| Finding ID Pattern | Upgrade Type | Task Description |
+|--------------------|--------------|------------------|
+| `LANG-JAVA-VERSION` | Java Runtime | "Upgrade project from Java 8 to Java 21 (LTS)" |
+| `LANG-SPRING-BOOT` | Spring Boot Framework | "Upgrade Spring Boot from 2.7.x to 3.2.x (latest stable)" |
+| `LANG-JAKARTA-NAMESPACE` | API Migration | "Migrate javax.* imports to jakarta.* namespaces" |
+| Other/CWE-477 | General | "Upgrade this project to the latest Java version" |
+
+**Example for LANG-JAVA-VERSION:**
 ```
 Call tool: appmod-run-task
 
-Task: Upgrade this project to the latest Java version
+Task: Upgrade project from Java 8 to Java 21 (LTS)
 
 Locations found:
-1. [file1:line] - [deprecated API or pattern]
-2. [file2:line] - [deprecated API or pattern]
-3. [file3:line] - [deprecated API or pattern]
+1. pom.xml:16 - <java.version>1.8</java.version>
+2. [any other build config files]
 
-[Include the specific API/pattern that needs upgrading and target version]
+Target: Java 21 (current LTS version with extended support)
+```
+
+**Example for LANG-SPRING-BOOT:**
+```
+Call tool: appmod-run-task
+
+Task: Upgrade Spring Boot from 2.7.18 to 3.2.x
+
+Locations found:
+1. pom.xml:10-12 - spring-boot-starter-parent:2.7.18
+
+Note: Spring Boot 3.x requires Java 17+ and jakarta.* namespaces (javax.* migration required)
+```
+
+**Example for LANG-JAKARTA-NAMESPACE:**
+```
+Call tool: appmod-run-task
+
+Task: Migrate javax.* imports to jakarta.* namespaces for Spring Boot 3.x compatibility
+
+Locations found:
+1. src/main/java/com/photoalbum/model/Photo.java:5-8 - javax.persistence.*, javax.validation.*
+2. [scan for all javax.* imports in src/]
+
+Migration: javax.persistence.* → jakarta.persistence.*, javax.validation.* → jakarta.validation.*
 ```
 
 Wait for the tool to provide fix guidance or apply the fix.

@@ -192,6 +192,22 @@ jobs:
 
               SUB_ISSUE_TITLE="🔒 [$FINDING_ID] Fix: $FINDING_NAME"
             else
+              # Determine specific task based on Finding ID
+              case "$FINDING_ID" in
+                LANG-JAVA-VERSION*)
+                  TASK_DESC="Upgrade project from Java 8 to Java 21 (LTS)"
+                  ;;
+                LANG-SPRING-BOOT*)
+                  TASK_DESC="Upgrade Spring Boot from 2.7.x to 3.2.x (latest stable)"
+                  ;;
+                LANG-JAKARTA-NAMESPACE*)
+                  TASK_DESC="Migrate javax.* imports to jakarta.* namespaces"
+                  ;;
+                *)
+                  TASK_DESC="Upgrade this project to the latest Java version"
+                  ;;
+              esac
+
               SUB_ISSUE_BODY=$(cat <<EOF
           ## 🔧 Language Version Upgrade: $FINDING_ID
 
@@ -215,7 +231,7 @@ jobs:
 
           **Use the \`appmod-run-task\` tool to upgrade this code.**
 
-          Task: Upgrade this project to the latest Java version
+          Task: $TASK_DESC
 
           ---
 
