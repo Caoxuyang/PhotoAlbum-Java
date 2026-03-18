@@ -126,16 +126,14 @@ The application creates the following table structure in Oracle:
 1. **Install Oracle Database** (or use Oracle XE)
 2. **Create database user**:
    ```sql
-   CREATE USER photoalbum IDENTIFIED BY photoalbum;
+   CREATE USER photoalbum IDENTIFIED BY <your_password>;
    GRANT CONNECT, RESOURCE, DBA TO photoalbum;
    ```
-3. **Update application.properties**:
-   ```properties
-   spring.datasource.url=jdbc:oracle:thin:@localhost:1521:XE
-   spring.datasource.username=photoalbum
-   spring.datasource.password=photoalbum
-   spring.jpa.hibernate.ddl-auto=create
+3. **Set the required environment variable** (never commit real passwords):
+   ```bash
+   export DB_PASSWORD=<your_password>
    ```
+   The `application.properties` file reads the password from this variable (`spring.datasource.password=${DB_PASSWORD}`), so no manual edit is needed.
 4. **Run the application**:
    ```bash
    mvn spring-boot:run
