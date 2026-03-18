@@ -37,7 +37,15 @@ A photo gallery application built with Spring Boot and Oracle Database, featurin
    cd PhotoAlbum-Java
    ```
 
-2. **Start the application**:
+2. **Create a `.env` file from the example and set your credentials**:
+   ```bash
+   cp .env.example .env
+   # Edit .env and set DB_USERNAME and DB_PASSWORD to your desired values
+   ```
+
+   > ⚠️ The `.env` file is excluded from version control. Never commit real credentials.
+
+3. **Start the application**:
    ```bash
    # Use docker-compose directly
    docker-compose up --build -d
@@ -66,7 +74,7 @@ A photo gallery application built with Spring Boot and Oracle Database, featurin
   - `5500` (Enterprise Manager) - mapped to host port 5500
 - **Database**: `XE` (Express Edition)
 - **Schema**: `photoalbum`
-- **Username/Password**: `photoalbum/photoalbum`
+- **Username/Password**: Configured via `DB_USERNAME` / `DB_PASSWORD` environment variables (see `.env.example`)
 
 ## Photo Album Java Application
 - **Port**: `8080` (mapped to host port 8080)
@@ -126,14 +134,15 @@ The application creates the following table structure in Oracle:
 1. **Install Oracle Database** (or use Oracle XE)
 2. **Create database user**:
    ```sql
-   CREATE USER photoalbum IDENTIFIED BY photoalbum;
+   CREATE USER photoalbum IDENTIFIED BY <your_password>;
    GRANT CONNECT, RESOURCE, DBA TO photoalbum;
    ```
-3. **Update application.properties**:
+3. **Update application.properties** (or set environment variables):
    ```properties
    spring.datasource.url=jdbc:oracle:thin:@localhost:1521:XE
-   spring.datasource.username=photoalbum
-   spring.datasource.password=photoalbum
+   # Set DB_USERNAME and DB_PASSWORD as environment variables, or override here for local dev only
+   spring.datasource.username=${DB_USERNAME}
+   spring.datasource.password=${DB_PASSWORD}
    spring.jpa.hibernate.ddl-auto=create
    ```
 4. **Run the application**:
@@ -165,8 +174,8 @@ java -jar target/photo-album-1.0.0.jar
 
 2. **Database connection errors**:
    ```bash
-   # Verify Oracle is ready
-   docker exec -it photoalbum-oracle sqlplus photoalbum/photoalbum@//localhost:1521/XE
+   # Verify Oracle is ready (replace with your actual credentials from .env)
+   docker exec -it photoalbum-oracle sqlplus ${DB_USERNAME}/${DB_PASSWORD}@//localhost:1521/XE
    ```
 
 3. **Permission errors**:
@@ -207,7 +216,7 @@ docker-compose down -v
 
 Oracle Enterprise Manager is available at `http://localhost:5500/em` for database administration:
 - **Username**: `system`
-- **Password**: `photoalbum`
+- **Password**: The `DB_PASSWORD` value you configured in `.env`
 - **Container**: `XE`
 
 ## Performance Notes
