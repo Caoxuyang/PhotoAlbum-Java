@@ -1,52 +1,60 @@
 {
-  "assessment_date": "2026-03-05T09:30:00.000Z",
+  "assessment_date": "2026-03-18T14:29:20.905Z",
   "summary": {
-    "total_issues": 5,
-    "mandatory_count": 2,
-    "optional_count": 1,
+    "total_issues": 6,
+    "mandatory_count": 1,
+    "optional_count": 4,
     "potential_count": 1,
-    "information_count": 1
+    "information_count": 0
   },
   "findings": [
     {
-      "id": "CWE-89",
-      "name": "SQL Injection",
-      "category": "Injection Attacks",
-      "severity": "mandatory",
-      "description": "The product constructs all or part of an SQL command using externally-influenced input from an upstream component, but it does not neutralize or incorrectly neutralizes special elements that could modify the intended SQL command.",
-      "evidence": "src/main/java/com/example/photoalbum/repository/PhotoRepository.java:45 — String concatenation used to build SQL query with user input: \"SELECT * FROM photos WHERE title LIKE '%\" + searchTerm + \"%'\". This allows SQL injection attacks."
-    },
-    {
       "id": "CWE-79",
-      "name": "Cross-site Scripting (XSS)",
+      "name": "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')",
       "category": "Injection Attacks",
-      "severity": "mandatory",
-      "description": "The product does not neutralize or incorrectly neutralizes user-controllable input before it is placed in output that is used as a web page served to other users.",
-      "evidence": "src/main/java/com/example/photoalbum/controller/PhotoController.java:78 — User-provided photo description is rendered directly in HTML without escaping: model.addAttribute(\"description\", photo.getDescription()). Template does not use th:text for safe rendering."
-    },
-    {
-      "id": "CWE-22",
-      "name": "Path Traversal",
-      "category": "File & Path Security",
       "severity": "optional",
-      "description": "The product uses external input to construct a pathname that is intended to identify a file or directory located underneath a restricted parent directory, but does not properly neutralize special elements that can cause the pathname to resolve outside of the restricted directory.",
-      "evidence": "src/main/java/com/example/photoalbum/service/FileStorageService.java:32 — User-supplied filename used directly in path construction: Paths.get(uploadDir, filename). No validation for '../' sequences."
+      "description": "The product does not neutralize or incorrectly neutralizes user-controllable input before it is placed in output that is used as a web page that is served to other users.",
+      "evidence": "src/main/resources/static/js/upload.js:160 — createPhotoCard() embeds photo.originalFileName directly into HTML via insertAdjacentHTML without escaping; showErrors() also uses innerHTML with unescaped filenames from server response"
     },
     {
-      "id": "CWE-532",
-      "name": "Insertion of Sensitive Information into Log File",
-      "category": "Information Exposure",
+      "id": "CWE-259",
+      "name": "Use of Hard-coded Password",
+      "category": "Credentials & Secrets",
+      "severity": "optional",
+      "description": "The product contains a hard-coded password, which it uses for its own inbound authentication or for outbound communication to external components.",
+      "evidence": "src/main/resources/application.properties:12-13 — spring.datasource.username=photoalbum / spring.datasource.password=photoalbum hardcoded in plaintext"
+    },
+    {
+      "id": "CWE-434",
+      "name": "Unrestricted Upload of File with Dangerous Type",
+      "category": "File & Path Security",
+      "severity": "mandatory",
+      "description": "The product allows the upload or transfer of dangerous file types that are automatically processed within its environment.",
+      "evidence": "src/main/java/com/photoalbum/service/impl/PhotoServiceImpl.java:74 — Validates file type using client-supplied file.getContentType() only; no server-side magic byte verification. Attacker can spoof MIME type header to bypass restriction."
+    },
+    {
+      "id": "CWE-732",
+      "name": "Incorrect Permission Assignment for Critical Resource",
+      "category": "Credentials & Secrets",
+      "severity": "optional",
+      "description": "The product specifies permissions for a security-critical resource in a way that allows that resource to be read or modified by unintended actors.",
+      "evidence": "src/main/resources/application.properties — File permissions -rw-rw-r-- (world-readable, group-writable) on configuration file containing plaintext database credentials"
+    },
+    {
+      "id": "CWE-778",
+      "name": "Insufficient Logging",
+      "category": "Credentials & Secrets",
       "severity": "potential",
-      "description": "Information written to log files can be of a sensitive nature and give valuable guidance to an attacker or expose sensitive user information.",
-      "evidence": "src/main/java/com/example/photoalbum/service/AuthService.java:56 — User credentials logged at DEBUG level: logger.debug(\"Login attempt for user: {} with password: {}\", username, password). Sensitive data exposed in logs."
+      "description": "When a security-critical event occurs, the product either does not record the event or omits important details about the event when logging it.",
+      "evidence": "No authentication or authorization mechanism exists; security-critical operations (delete, upload) log action outcomes but no user identity/session, no failed authentication events, no access control violations are ever logged"
     },
     {
-      "id": "CWE-477",
-      "name": "Use of Obsolete Function",
-      "category": "Code Quality",
-      "severity": "information",
-      "description": "The code uses deprecated or obsolete functions, suggesting the code has not been actively maintained.",
-      "evidence": "pom.xml:25 — Using outdated Spring Boot version 2.5.0 which has known security vulnerabilities. Recommend upgrading to latest 3.x version."
+      "id": "CWE-798",
+      "name": "Use of Hard-coded Credentials",
+      "category": "Credentials & Secrets",
+      "severity": "optional",
+      "description": "The product contains hard-coded credentials, such as a password or cryptographic key.",
+      "evidence": "src/main/resources/application.properties:12-13 and src/main/resources/application-docker.properties:2-3 — Both files contain hardcoded database username 'photoalbum' and password 'photoalbum' in plaintext"
     }
   ]
 }
