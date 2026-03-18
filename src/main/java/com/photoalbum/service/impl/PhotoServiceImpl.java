@@ -29,6 +29,10 @@ public class PhotoServiceImpl implements PhotoService {
 
     private static final Logger logger = LoggerFactory.getLogger(PhotoServiceImpl.class);
 
+    /** Allowed file extensions (lower-case). */
+    private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
+            ".jpg", ".jpeg", ".png", ".gif", ".webp");
+
     private final PhotoRepository photoRepository;
     private final long maxFileSizeBytes;
     private final List<String> allowedMimeTypes;
@@ -79,12 +83,23 @@ public class PhotoServiceImpl implements PhotoService {
         result.setFileName(file.getOriginalFilename());
 
         try {
-            // Validate file type
-            if (!allowedMimeTypes.contains(file.getContentType().toLowerCase())) {
+            // Validate content type (guard against null before lower-casing)
+            String contentType = file.getContentType();
+            if (contentType == null || !allowedMimeTypes.contains(contentType.toLowerCase())) {
                 result.setSuccess(false);
                 result.setErrorMessage("File type not supported. Please upload JPEG, PNG, GIF, or WebP images.");
-                logger.warn("Upload rejected: Invalid file type {} for {}", 
-                    file.getContentType(), file.getOriginalFilename());
+                logger.warn("Upload rejected: Invalid file type {} for {}",
+                    contentType, file.getOriginalFilename());
+                return result;
+            }
+
+            // Validate file extension against whitelist
+            String extension = getFileExtension(file.getOriginalFilename()).toLowerCase();
+            if (!ALLOWED_EXTENSIONS.contains(extension)) {
+                result.setSuccess(false);
+                result.setErrorMessage("File extension not supported. Please upload JPEG, PNG, GIF, or WebP images.");
+                logger.warn("Upload rejected: Invalid file extension {} for {}",
+                    extension, file.getOriginalFilename());
                 return result;
             }
 
@@ -105,32 +120,39 @@ public class PhotoServiceImpl implements PhotoService {
             }
 
             // Generate unique filename for compatibility (stored in database, not on disk)
-            String extension = getFileExtension(file.getOriginalFilename());
             String storedFileName = UUID.randomUUID().toString() + extension;
             String relativePath = "/uploads/" + storedFileName; // For compatibility only
 
             // Extract image dimensions and read file data
             Integer width = null;
             Integer height = null;
-            byte[] photoData = null;
-            
+            byte[] photoData;
+
+            // Read file bytes – failure here is fatal
             try {
-                // Read file content for database storage
                 photoData = file.getBytes();
-                
-                // Extract image dimensions from byte array
-                try (ByteArrayInputStream bis = new ByteArrayInputStream(photoData)) {
-                    BufferedImage image = ImageIO.read(bis);
-                    if (image != null) {
-                        width = image.getWidth();
-                        height = image.getHeight();
-                    }
-                }
             } catch (IOException ex) {
                 logger.error("Error reading file data for {}", file.getOriginalFilename(), ex);
                 result.setSuccess(false);
                 result.setErrorMessage("Error reading file data. Please try again.");
                 return result;
+            }
+
+            // Validate magic bytes to prevent MIME-type spoofing
+            if (!isValidImageMagicBytes(photoData)) {
+                result.setSuccess(false);
+                result.setErrorMessage("File content does not match an allowed image type.");
+                logger.warn("Upload rejected: Invalid magic bytes for {}", file.getOriginalFilename());
+                return result;
+            }
+
+            // Extract image dimensions (best-effort; ImageIO does not support WebP natively)
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(photoData)) {
+                BufferedImage image = ImageIO.read(bis);
+                if (image != null) {
+                    width = image.getWidth();
+                    height = image.getHeight();
+                }
             } catch (Exception ex) {
                 logger.warn("Could not extract image dimensions for {}", file.getOriginalFilename(), ex);
                 // Continue without dimensions - not critical
@@ -214,6 +236,41 @@ public class PhotoServiceImpl implements PhotoService {
     public Optional<Photo> getNextPhoto(Photo currentPhoto) {
         List<Photo> newerPhotos = photoRepository.findPhotosUploadedAfter(currentPhoto.getUploadedAt());
         return newerPhotos.isEmpty() ? Optional.<Photo>empty() : Optional.of(newerPhotos.get(0));
+    }
+
+    /**
+     * Verify file content against known image magic bytes to prevent MIME-type spoofing.
+     * Supported signatures:
+     * <ul>
+     *   <li>JPEG – {@code FF D8 FF}</li>
+     *   <li>PNG  – {@code 89 50 4E 47 0D 0A 1A 0A}</li>
+     *   <li>GIF  – {@code 47 49 46 38} (GIF8…)</li>
+     *   <li>WebP – {@code 52 49 46 46 .. .. .. .. 57 45 42 50} (RIFF….WEBP)</li>
+     * </ul>
+     */
+    public static boolean isValidImageMagicBytes(byte[] data) {
+        if (data == null || data.length < 12) {
+            return false;
+        }
+        // JPEG: FF D8 FF
+        if ((data[0] & 0xFF) == 0xFF && (data[1] & 0xFF) == 0xD8 && (data[2] & 0xFF) == 0xFF) {
+            return true;
+        }
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        if ((data[0] & 0xFF) == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47
+                && data[4] == 0x0D && data[5] == 0x0A && data[6] == 0x1A && data[7] == 0x0A) {
+            return true;
+        }
+        // GIF: GIF87a or GIF89a (starts with GIF8)
+        if (data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x38) {
+            return true;
+        }
+        // WebP: RIFF....WEBP (bytes 0-3 = RIFF, bytes 8-11 = WEBP)
+        if (data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46
+                && data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50) {
+            return true;
+        }
+        return false;
     }
 
     /**
