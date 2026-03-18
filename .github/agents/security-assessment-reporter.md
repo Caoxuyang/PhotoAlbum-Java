@@ -134,24 +134,39 @@ Read the issue body. Extract THREE pieces of information:
 
 ### Step 2: Call the Assessment Tool(s)
 
-**For each domain selected, call the tool with the appropriate domain parameter:**
+**IMPORTANT: Parse the domains string and call the tool accordingly:**
 
+**Case 1: "Security"**
 ```bash
-# If "Security" is selected:
+# Call ONCE with Security domain
+Call tool: appmod-iso5055-security-assessment
+Parameters: domain="Security"
+```
+
+**Case 2: "Language Version"**
+```bash
+# Call ONCE with Java Upgrade domain
+Call tool: appmod-iso5055-security-assessment
+Parameters: domain="Java Upgrade"
+```
+
+**Case 3: "Security + Language Version"**
+```bash
+# Call TWICE - once for each domain
+
+# First call - Security
 Call tool: appmod-iso5055-security-assessment
 Parameters: domain="Security"
 
-# If "Language Version" is selected:
+# Second call - Language Version
 Call tool: appmod-iso5055-security-assessment
 Parameters: domain="Java Upgrade"
-
-# If "Security + Language Version" is selected:
-# Call the tool TWICE (once for each domain)
 ```
 
-**IMPORTANT:** When calling the tool:
-- For "Security" domain → use `domain="Security"`
-- For "Language Version" domain → use `domain="Java Upgrade"` (exact tool parameter name)
+**Domain Parameter Mapping:**
+- When you see "Security" → use `domain="Security"`
+- When you see "Language Version" → use `domain="Java Upgrade"`
+- When you see "Security + Language Version" → call tool twice with both domains
 
 ### Step 3: Filter and Format as Markdown
 
