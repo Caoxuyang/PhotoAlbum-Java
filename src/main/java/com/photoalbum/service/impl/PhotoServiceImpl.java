@@ -11,10 +11,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.BoundedInputStream;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -115,8 +119,18 @@ public class PhotoServiceImpl implements PhotoService {
             byte[] photoData = null;
             
             try {
-                // Read file content for database storage
-                photoData = file.getBytes();
+                // Read file content using a bounded stream to enforce max size during reading (CWE-789).
+                // Using maxFileSizeBytes + 1 to detect oversized files without silent truncation.
+                try (InputStream inputStream = file.getInputStream();
+                     BoundedInputStream boundedStream = new BoundedInputStream(inputStream, maxFileSizeBytes + 1)) {
+                    photoData = IOUtils.toByteArray(boundedStream);
+                }
+                if (photoData.length > maxFileSizeBytes) {
+                    result.setSuccess(false);
+                    result.setErrorMessage(String.format("File size exceeds %dMB limit.", maxFileSizeBytes / 1024 / 1024));
+                    logger.warn("Upload rejected: File data size exceeds limit for {}", file.getOriginalFilename());
+                    return result;
+                }
                 
                 // Extract image dimensions from byte array
                 try (ByteArrayInputStream bis = new ByteArrayInputStream(photoData)) {
