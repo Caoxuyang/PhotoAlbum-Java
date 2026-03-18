@@ -80,11 +80,12 @@ public class PhotoServiceImpl implements PhotoService {
 
         try {
             // Validate file type
-            if (!allowedMimeTypes.contains(file.getContentType().toLowerCase())) {
+            String contentType = file.getContentType();
+            if (contentType == null || !allowedMimeTypes.contains(contentType.toLowerCase())) {
                 result.setSuccess(false);
                 result.setErrorMessage("File type not supported. Please upload JPEG, PNG, GIF, or WebP images.");
                 logger.warn("Upload rejected: Invalid file type {} for {}", 
-                    file.getContentType(), file.getOriginalFilename());
+                    contentType, file.getOriginalFilename());
                 return result;
             }
 
@@ -145,8 +146,10 @@ public class PhotoServiceImpl implements PhotoService {
                 file.getSize(),
                 file.getContentType()
             );
-            photo.setWidth(width);
-            photo.setHeight(height);
+            if (width != null && height != null) {
+                photo.setWidth(width);
+                photo.setHeight(height);
+            }
 
             // Save to database (with BLOB photo data)
             try {
