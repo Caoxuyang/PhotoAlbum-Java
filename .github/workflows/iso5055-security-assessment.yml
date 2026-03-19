@@ -67,8 +67,11 @@ jobs:
           echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
           echo "issue_url=$ISSUE_URL" >> $GITHUB_OUTPUT
 
-          # Now update issue body with correct issue number
-          gh issue edit $ISSUE_NUMBER --body "## 🔍 ISO 5055 Assessment Task
+          # Build issue body dynamically
+          BODY_FILE=$(mktemp)
+
+          cat > "$BODY_FILE" <<EOF
+          ## 🔍 ISO 5055 Assessment Task
 
           **Assessment Domains:** ${ASSESSMENT_DOMAINS}
           **Severity Filter:** ${SEVERITY_UPPER}
@@ -83,56 +86,85 @@ jobs:
           ### Step 1: Determine Which Assessments to Run
 
           Based on **Assessment Domains: ${ASSESSMENT_DOMAINS}**, you must:
+          EOF
 
-          $(if [[ \"${ASSESSMENT_DOMAINS}\" == \"Security\" ]]; then
-            echo \"- ✅ Run Security assessment ONLY (call \\\`appmod-iso5055-security-assessment\\\` with domain=\\\"Security\\\")\"
-            echo \"- ❌ DO NOT run Language Version assessment\"
-          elif [[ \"${ASSESSMENT_DOMAINS}\" == \"Language Version\" ]]; then
-            echo \"- ✅ Run Language Version assessment ONLY (call \\\`appmod-iso5055-security-assessment\\\` with domain=\\\"Java Upgrade\\\")\"
-            echo \"- ❌ DO NOT run Security assessment\"
+          # Add domain-specific instructions
+          if [[ "${ASSESSMENT_DOMAINS}" == "Security" ]]; then
+            cat >> "$BODY_FILE" <<'EOF'
+
+          - ✅ Run Security assessment ONLY (call `appmod-iso5055-security-assessment` with domain="Security")
+          - ❌ DO NOT run Language Version assessment
+          EOF
+          elif [[ "${ASSESSMENT_DOMAINS}" == "Language Version" ]]; then
+            cat >> "$BODY_FILE" <<'EOF'
+
+          - ✅ Run Language Version assessment ONLY (call `appmod-iso5055-security-assessment` with domain="Java Upgrade")
+          - ❌ DO NOT run Security assessment
+          EOF
           else
-            echo \"- ✅ Run Security assessment (call \\\`appmod-iso5055-security-assessment\\\` with domain=\\\"Security\\\")\"
-            echo \"- ✅ Run Language Version assessment (call \\\`appmod-iso5055-security-assessment\\\` with domain=\\\"Java Upgrade\\\")\"
-          fi)
+            cat >> "$BODY_FILE" <<'EOF'
+
+          - ✅ Run Security assessment (call `appmod-iso5055-security-assessment` with domain="Security")
+          - ✅ Run Language Version assessment (call `appmod-iso5055-security-assessment` with domain="Java Upgrade")
+          EOF
+          fi
+
+          cat >> "$BODY_FILE" <<EOF
 
           ### Step 2: Filter Results by Severity
 
           **Severity Filter: ${SEVERITY_UPPER}** means you must:
+          EOF
 
-          $(case \"${SEVERITY_UPPER}\" in
-            \"MANDATORY\")
-              echo \"- ✅ Include ONLY 🔴 Mandatory findings\"
-              echo \"- ❌ Exclude 🟠 Optional, 🟡 Potential, and 🔵 Information findings\"
+          # Add severity filter instructions
+          case "${SEVERITY_UPPER}" in
+            "MANDATORY")
+              cat >> "$BODY_FILE" <<'EOF'
+
+          - ✅ Include ONLY 🔴 Mandatory findings
+          - ❌ Exclude 🟠 Optional, 🟡 Potential, and 🔵 Information findings
+          EOF
               ;;
-            \"OPTIONAL\")
-              echo \"- ✅ Include 🔴 Mandatory AND 🟠 Optional findings\"
-              echo \"- ❌ Exclude 🟡 Potential and 🔵 Information findings\"
+            "OPTIONAL")
+              cat >> "$BODY_FILE" <<'EOF'
+
+          - ✅ Include 🔴 Mandatory AND 🟠 Optional findings
+          - ❌ Exclude 🟡 Potential and 🔵 Information findings
+          EOF
               ;;
-            \"POTENTIAL\")
-              echo \"- ✅ Include 🔴 Mandatory, 🟠 Optional, AND 🟡 Potential findings\"
-              echo \"- ❌ Exclude 🔵 Information findings\"
+            "POTENTIAL")
+              cat >> "$BODY_FILE" <<'EOF'
+
+          - ✅ Include 🔴 Mandatory, 🟠 Optional, AND 🟡 Potential findings
+          - ❌ Exclude 🔵 Information findings
+          EOF
               ;;
-            \"ALL\")
-              echo \"- ✅ Include all findings (🔴 Mandatory + 🟠 Optional + 🟡 Potential + 🔵 Information)\"
+            "ALL")
+              cat >> "$BODY_FILE" <<'EOF'
+
+          - ✅ Include all findings (🔴 Mandatory + 🟠 Optional + 🟡 Potential + 🔵 Information)
+          EOF
               ;;
-          esac)
+          esac
+
+          cat >> "$BODY_FILE" <<'EOF'
 
           ### Step 3: Format the Report
 
           Your report MUST start with:
-          \\\`\\\`\\\`markdown
+          \`\`\`markdown
           <!-- ASSESSMENT_VERIFIED -->
           ## 📊 ISO 5055 Assessment Report
 
           **Assessment Date:** [today's date]
           **Repository:** Caoxuyang/PhotoAlbum-Java
-          **Assessment Domains:** ${ASSESSMENT_DOMAINS}
-          **Severity Filter:** ${SEVERITY_UPPER}
-          \\\`\\\`\\\`
+          **Assessment Domains:** [MUST match the domains from this issue]
+          **Severity Filter:** [MUST match the filter from this issue]
+          \`\`\`
 
           ### Step 4: Post the Report
 
-          Use the \\\`add_issue_comment\\\` MCP tool to post your report:
+          Use the \`add_issue_comment\` MCP tool to post your report:
           - **issue_number:** ${ISSUE_NUMBER}
           - **body:** Your formatted markdown report
 
@@ -142,10 +174,15 @@ jobs:
 
           - ✅ ONLY assess the domains specified: ${ASSESSMENT_DOMAINS}
           - ✅ ONLY include findings matching severity filter: ${SEVERITY_UPPER}
-          - ✅ Post report to issue #${ISSUE_NUMBER} using \\\`add_issue_comment\\\` MCP tool
+          - ✅ Post report to issue #${ISSUE_NUMBER} using \`add_issue_comment\` MCP tool
           - ❌ DO NOT fix code, create PRs, or close this issue
           - ❌ DO NOT include findings from other domains
-          - ❌ DO NOT include findings below the severity threshold"
+          - ❌ DO NOT include findings below the severity threshold
+          EOF
+
+          # Update the issue with the dynamically built body
+          gh issue edit $ISSUE_NUMBER --body-file "$BODY_FILE"
+          rm "$BODY_FILE"
 
           echo "✅ Created issue #$ISSUE_NUMBER: $ISSUE_URL"
 
