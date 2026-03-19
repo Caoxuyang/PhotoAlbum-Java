@@ -18,10 +18,16 @@ $AKS_NODE_VM_SIZE = "Standard_D8ds_v5"
 $POSTGRES_SERVER_NAME = "$RESOURCE_GROUP-postgresql"
 $PostgreSQL_SKU = "Standard_D4ads_v5"
 $POSTGRES_ADMIN_USER="photoalbum_admin"
-$POSTGRES_ADMIN_PASSWORD="P@ssw0rd123!"
+if (-not $env:POSTGRES_ADMIN_PASSWORD) {
+    throw "POSTGRES_ADMIN_PASSWORD environment variable must be set. See .env.example for guidance."
+}
+$POSTGRES_ADMIN_PASSWORD = $env:POSTGRES_ADMIN_PASSWORD
 $POSTGRES_DATABASE_NAME="photoalbum"
 $POSTGRES_APP_USER="photoalbum"
-$POSTGRES_APP_PASSWORD="photoalbum"
+if (-not $env:DB_PASSWORD) {
+    throw "DB_PASSWORD environment variable must be set. See .env.example for guidance."
+}
+$POSTGRES_APP_PASSWORD = $env:DB_PASSWORD
 
 Write-Host "${YELLOW}Using default subscription...${NC}" -NoNewline
 Write-Host ""
@@ -187,12 +193,14 @@ Write-Host ""
 Write-Host "${YELLOW}Creating application user...${NC}" -NoNewline
 Write-Host ""
 try {
+    # Escape any single quotes in the password to prevent SQL injection in the query string
+    $escapedAppPassword = $POSTGRES_APP_PASSWORD.Replace("'", "''")
     az postgres flexible-server execute `
         --name "$POSTGRES_SERVER_NAME" `
         --admin-user "$POSTGRES_ADMIN_USER" `
         --admin-password "$POSTGRES_ADMIN_PASSWORD" `
         --database-name "postgres" `
-        --querytext "CREATE USER photoalbum WITH PASSWORD 'photoalbum';"
+        --querytext "CREATE USER photoalbum WITH PASSWORD '$escapedAppPassword';"
 } catch {
     Write-Host "${YELLOW}User may already exist, continuing...${NC}" -NoNewline
     Write-Host ""

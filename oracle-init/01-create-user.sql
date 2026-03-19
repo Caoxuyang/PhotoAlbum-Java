@@ -1,12 +1,13 @@
--- This script runs automatically when Oracle XE container starts
--- It creates the photoalbum user and grants necessary privileges
+-- This script runs automatically when Oracle container starts
+-- It grants necessary privileges to the photoalbum user.
+-- NOTE: User creation and password are handled automatically by the
+-- gvenzl/oracle-free image using the APP_USER and APP_USER_PASSWORD
+-- environment variables (set via DB_PASSWORD in .env / docker-compose).
+-- Do NOT hard-code the password here.
 
 ALTER SESSION SET "_ORACLE_SCRIPT"=true;
 
--- Create photoalbum user
-CREATE USER photoalbum IDENTIFIED BY photoalbum;
-
--- Grant system privileges
+-- Grant system privileges (user already created by image via APP_USER_PASSWORD env var)
 GRANT CONNECT TO photoalbum;
 GRANT RESOURCE TO photoalbum;
 GRANT DBA TO photoalbum;
