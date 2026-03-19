@@ -68,33 +68,84 @@ jobs:
           echo "issue_url=$ISSUE_URL" >> $GITHUB_OUTPUT
 
           # Now update issue body with correct issue number
-          gh issue edit $ISSUE_NUMBER --body "## Task: Run ISO 5055 Assessment
+          gh issue edit $ISSUE_NUMBER --body "## 🔍 ISO 5055 Assessment Task
 
-          **Agent:** \`security-assessment-reporter\`
           **Assessment Domains:** ${ASSESSMENT_DOMAINS}
           **Severity Filter:** ${SEVERITY_UPPER}
+          **Target Issue:** #${ISSUE_NUMBER}
 
           ---
 
-          ## 🎯 TARGET ISSUE FOR REPORT
+          ## 🤖 Instructions for Copilot
 
-          **Issue Number:** #${ISSUE_NUMBER}
-          **Issue URL:** ${ISSUE_URL}
+          You are a security assessment reporter. Your task is to run an ISO 5055 assessment and post the report to THIS issue.
 
-          ⚠️ **IMPORTANT:** Post your report as a comment on issue **#${ISSUE_NUMBER}** (this issue).
+          ### Step 1: Determine Which Assessments to Run
+
+          Based on **Assessment Domains: ${ASSESSMENT_DOMAINS}**, you must:
+
+          $(if [[ \"${ASSESSMENT_DOMAINS}\" == \"Security\" ]]; then
+            echo \"- ✅ Run Security assessment ONLY (call \\\`appmod-iso5055-security-assessment\\\` with domain=\\\"Security\\\")\"
+            echo \"- ❌ DO NOT run Language Version assessment\"
+          elif [[ \"${ASSESSMENT_DOMAINS}\" == \"Language Version\" ]]; then
+            echo \"- ✅ Run Language Version assessment ONLY (call \\\`appmod-iso5055-security-assessment\\\` with domain=\\\"Java Upgrade\\\")\"
+            echo \"- ❌ DO NOT run Security assessment\"
+          else
+            echo \"- ✅ Run Security assessment (call \\\`appmod-iso5055-security-assessment\\\` with domain=\\\"Security\\\")\"
+            echo \"- ✅ Run Language Version assessment (call \\\`appmod-iso5055-security-assessment\\\` with domain=\\\"Java Upgrade\\\")\"
+          fi)
+
+          ### Step 2: Filter Results by Severity
+
+          **Severity Filter: ${SEVERITY_UPPER}** means you must:
+
+          $(case \"${SEVERITY_UPPER}\" in
+            \"MANDATORY\")
+              echo \"- ✅ Include ONLY 🔴 Mandatory findings\"
+              echo \"- ❌ Exclude 🟠 Optional, 🟡 Potential, and 🔵 Information findings\"
+              ;;
+            \"OPTIONAL\")
+              echo \"- ✅ Include 🔴 Mandatory AND 🟠 Optional findings\"
+              echo \"- ❌ Exclude 🟡 Potential and 🔵 Information findings\"
+              ;;
+            \"POTENTIAL\")
+              echo \"- ✅ Include 🔴 Mandatory, 🟠 Optional, AND 🟡 Potential findings\"
+              echo \"- ❌ Exclude 🔵 Information findings\"
+              ;;
+            \"ALL\")
+              echo \"- ✅ Include all findings (🔴 Mandatory + 🟠 Optional + 🟡 Potential + 🔵 Information)\"
+              ;;
+          esac)
+
+          ### Step 3: Format the Report
+
+          Your report MUST start with:
+          \\\`\\\`\\\`markdown
+          <!-- ASSESSMENT_VERIFIED -->
+          ## 📊 ISO 5055 Assessment Report
+
+          **Assessment Date:** [today's date]
+          **Repository:** Caoxuyang/PhotoAlbum-Java
+          **Assessment Domains:** ${ASSESSMENT_DOMAINS}
+          **Severity Filter:** ${SEVERITY_UPPER}
+          \\\`\\\`\\\`
+
+          ### Step 4: Post the Report
+
+          Use the \\\`add_issue_comment\\\` MCP tool to post your report:
+          - **issue_number:** ${ISSUE_NUMBER}
+          - **body:** Your formatted markdown report
 
           ---
 
-          ## Instructions
+          ## ⚠️ Critical Requirements
 
-          Follow the instructions in \`.github/agents/security-assessment-reporter.md\`
-
-          **Steps:**
-          1. Call tool \`appmod-iso5055-security-assessment\` for each selected domain
-          2. Format the results as markdown
-          3. Post the report using the \`add_issue_comment\` MCP tool with issue_number=${ISSUE_NUMBER}
-
-          ⛔ **DO NOT** fix code, create PRs, or close this issue."
+          - ✅ ONLY assess the domains specified: ${ASSESSMENT_DOMAINS}
+          - ✅ ONLY include findings matching severity filter: ${SEVERITY_UPPER}
+          - ✅ Post report to issue #${ISSUE_NUMBER} using \\\`add_issue_comment\\\` MCP tool
+          - ❌ DO NOT fix code, create PRs, or close this issue
+          - ❌ DO NOT include findings from other domains
+          - ❌ DO NOT include findings below the severity threshold"
 
           echo "✅ Created issue #$ISSUE_NUMBER: $ISSUE_URL"
 
