@@ -168,6 +168,8 @@ jobs:
           - **issue_number:** ${ISSUE_NUMBER}
           - **body:** Your formatted markdown report
 
+          **IMPORTANT:** This is a READ-ONLY assessment task. Post the report as a comment and STOP.
+
           ---
 
           ## ⚠️ Critical Requirements
@@ -176,8 +178,18 @@ jobs:
           - ✅ ONLY include findings matching severity filter: ${SEVERITY_UPPER}
           - ✅ Post report to issue #${ISSUE_NUMBER} using \`add_issue_comment\` MCP tool
           - ❌ DO NOT fix code, create PRs, or close this issue
+          - ❌ DO NOT create pull requests - this is assessment ONLY
+          - ❌ DO NOT modify any source code files
           - ❌ DO NOT include findings from other domains
           - ❌ DO NOT include findings below the severity threshold
+
+          ## 📝 Your Task Summary
+
+          1. Call \`appmod-iso5055-security-assessment\` tool for the specified domain(s)
+          2. Filter results by severity level
+          3. Format as markdown report
+          4. Post comment to issue #${ISSUE_NUMBER} using \`add_issue_comment\`
+          5. STOP - do not create PRs or fix code
           EOF
 
           # Update the issue with the dynamically built body
