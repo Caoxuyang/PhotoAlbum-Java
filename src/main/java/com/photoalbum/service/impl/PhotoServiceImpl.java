@@ -79,16 +79,7 @@ public class PhotoServiceImpl implements PhotoService {
         result.setFileName(file.getOriginalFilename());
 
         try {
-            // Validate file type
-            if (!allowedMimeTypes.contains(file.getContentType().toLowerCase())) {
-                result.setSuccess(false);
-                result.setErrorMessage("File type not supported. Please upload JPEG, PNG, GIF, or WebP images.");
-                logger.warn("Upload rejected: Invalid file type {} for {}", 
-                    file.getContentType(), file.getOriginalFilename());
-                return result;
-            }
-
-            // Validate file size
+            // Validate file size before reading bytes
             if (file.getSize() > maxFileSizeBytes) {
                 result.setSuccess(false);
                 result.setErrorMessage(String.format("File size exceeds %dMB limit.", maxFileSizeBytes / 1024 / 1024));
@@ -104,46 +95,54 @@ public class PhotoServiceImpl implements PhotoService {
                 return result;
             }
 
-            // Generate unique filename for compatibility (stored in database, not on disk)
-            String extension = getFileExtension(file.getOriginalFilename());
-            String storedFileName = UUID.randomUUID().toString() + extension;
-            String relativePath = "/uploads/" + storedFileName; // For compatibility only
-
-            // Extract image dimensions and read file data
-            Integer width = null;
-            Integer height = null;
-            byte[] photoData = null;
-            
+            // Read file content first for magic bytes validation
+            byte[] photoData;
             try {
-                // Read file content for database storage
                 photoData = file.getBytes();
-                
-                // Extract image dimensions from byte array
-                try (ByteArrayInputStream bis = new ByteArrayInputStream(photoData)) {
-                    BufferedImage image = ImageIO.read(bis);
-                    if (image != null) {
-                        width = image.getWidth();
-                        height = image.getHeight();
-                    }
-                }
             } catch (IOException ex) {
                 logger.error("Error reading file data for {}", file.getOriginalFilename(), ex);
                 result.setSuccess(false);
                 result.setErrorMessage("Error reading file data. Please try again.");
                 return result;
-            } catch (Exception ex) {
+            }
+
+            // Validate file type using magic bytes from actual file content (not client-supplied Content-Type)
+            String detectedMimeType = detectMimeTypeFromMagicBytes(photoData);
+            if (detectedMimeType == null || !allowedMimeTypes.contains(detectedMimeType)) {
+                result.setSuccess(false);
+                result.setErrorMessage("File type not supported. Please upload JPEG, PNG, GIF, or WebP images.");
+                logger.warn("Upload rejected: File content does not match an allowed image type for {}",
+                    file.getOriginalFilename());
+                return result;
+            }
+
+            // Generate unique filename for compatibility (stored in database, not on disk)
+            String extension = getFileExtension(file.getOriginalFilename());
+            String storedFileName = UUID.randomUUID().toString() + extension;
+            String relativePath = "/uploads/" + storedFileName; // For compatibility only
+
+            // Extract image dimensions from byte array
+            Integer width = null;
+            Integer height = null;
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(photoData)) {
+                BufferedImage image = ImageIO.read(bis);
+                if (image != null) {
+                    width = image.getWidth();
+                    height = image.getHeight();
+                }
+            } catch (IOException ex) {
                 logger.warn("Could not extract image dimensions for {}", file.getOriginalFilename(), ex);
                 // Continue without dimensions - not critical
             }
 
-            // Create photo entity with database BLOB storage
+            // Create photo entity with database BLOB storage, using detected MIME type
             Photo photo = new Photo(
                 file.getOriginalFilename(),
                 photoData,  // Store actual photo data in Oracle database
                 storedFileName,
                 relativePath, // Keep for compatibility, not used for serving
                 file.getSize(),
-                file.getContentType()
+                detectedMimeType  // Use magic-bytes-detected MIME type, not client-supplied value
             );
             photo.setWidth(width);
             photo.setHeight(height);
@@ -214,6 +213,49 @@ public class PhotoServiceImpl implements PhotoService {
     public Optional<Photo> getNextPhoto(Photo currentPhoto) {
         List<Photo> newerPhotos = photoRepository.findPhotosUploadedAfter(currentPhoto.getUploadedAt());
         return newerPhotos.isEmpty() ? Optional.<Photo>empty() : Optional.of(newerPhotos.get(0));
+    }
+
+    /**
+     * Detect MIME type by inspecting the magic bytes (file signature) of the content.
+     * This prevents bypassing validation by spoofing the client-supplied Content-Type header.
+     *
+     * @param bytes the file content bytes
+     * @return the detected MIME type, or null if the content does not match a supported image format
+     */
+    private String detectMimeTypeFromMagicBytes(byte[] bytes) {
+        if (bytes == null || bytes.length < 4) {
+            return null;
+        }
+
+        // JPEG: FF D8 FF
+        if (bytes[0] == (byte) 0xFF && bytes[1] == (byte) 0xD8 && bytes[2] == (byte) 0xFF) {
+            return "image/jpeg";
+        }
+
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        if (bytes.length >= 8
+                && bytes[0] == (byte) 0x89 && bytes[1] == (byte) 0x50
+                && bytes[2] == (byte) 0x4E && bytes[3] == (byte) 0x47
+                && bytes[4] == (byte) 0x0D && bytes[5] == (byte) 0x0A
+                && bytes[6] == (byte) 0x1A && bytes[7] == (byte) 0x0A) {
+            return "image/png";
+        }
+
+        // GIF: GIF87a (47 49 46 38 37 61) or GIF89a (47 49 46 38 39 61)
+        if (bytes.length >= 6
+                && bytes[0] == 'G' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == '8'
+                && (bytes[4] == '7' || bytes[4] == '9') && bytes[5] == 'a') {
+            return "image/gif";
+        }
+
+        // WebP: RIFF (52 49 46 46) at offset 0, WEBP (57 45 42 50) at offset 8
+        if (bytes.length >= 12
+                && bytes[0] == 'R' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == 'F'
+                && bytes[8] == 'W' && bytes[9] == 'E' && bytes[10] == 'B' && bytes[11] == 'P') {
+            return "image/webp";
+        }
+
+        return null;
     }
 
     /**
