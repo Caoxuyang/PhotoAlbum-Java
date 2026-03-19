@@ -172,6 +172,8 @@ jobs:
 
           ### 🤖 Instructions for Copilot
 
+          **Agent to use:** \`appmod-kit-java-upgrade-code-developer\`
+
           ⚠️ **CRITICAL:** These upgrades are interdependent. Spring Boot 3.x requires Java 17+ and jakarta.* namespaces. All changes MUST be in ONE PR.
 
           #### Your Task
@@ -337,6 +339,8 @@ jobs:
           ---
 
           ### 🤖 Instructions for Copilot
+
+          **Agent to use:** \`appmod-kit-java-upgrade-code-developer\`
 
           #### Your Task
 
